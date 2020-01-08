@@ -4,7 +4,7 @@ class Grid:
     def __init__(self, rows, cols):
         self.rows = rows
         self.cols = cols
-        self.grid = [[Vertex(False, (i,j)) for j in range(cols)] for i in range(rows)]
+        self.vertices = [[Vertex(False, (i,j)) for j in range(cols)] for i in range(rows)]
 
     def debugPrint(self):
         for row in self.grid:

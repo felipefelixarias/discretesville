@@ -8,6 +8,3 @@ class Discretesville:
         self.sssp = None
 
         
-    
-ville = Discretesville(5,5)
-ville.grid.debugPrint()
