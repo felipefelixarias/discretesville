@@ -56,7 +56,7 @@ class Pos(QWidget):
             color = self.palette().color(QPalette.Background)
             outer, inner = color, color
         elif self.inPath:
-            outer, inner = Qt.blue, Qt.lightGray
+            outer, inner = Qt.gray, Qt.blue
         else:
             outer, inner = Qt.gray, Qt.lightGray
 
