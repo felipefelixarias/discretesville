@@ -10,8 +10,7 @@ import time
 
 
 DIMS = [
-    (15,17),
-    (4,4)
+    (15,17)
 ]
 
 img = "../images/logo.png"
@@ -43,6 +42,7 @@ class Pos(QWidget):
         self.vertex.isGoal = False
         self.vertex.isStart = False
         self.vertex.isStaticObstacle = False
+        self.inPath = False
         self.update()
 
     def paintEvent(self, event):
@@ -151,6 +151,7 @@ class MainWindow(QMainWindow):
             for y in range(0, self.numCols):
                 w = Pos(x, y, self.ville)
                 self.grid.addWidget(w, x, y)
+                w.update()
                 # Connect signal to handle expansion.
                 #w.clicked.connect(self.trigger_start)
                 #w.expandable.connect(self.expand_reveal)
@@ -173,6 +174,14 @@ class MainWindow(QMainWindow):
             self.update()
             for obs in self.ville.dynamicObstacles:
                 print([o.pos for o in obs.path])
+
+            self.ville.robot.task.start = None
+            self.ville.robot.task.goal = None
+        else:
+            self.ville.robot.task.start = None
+            self.ville.robot.task.goal = None
+            self.ville.dynamicObstacles = []
+            self.reset_map()
 
 if __name__ == '__main__':
     app = QApplication([])

@@ -1,4 +1,5 @@
 import heapq
+import sys
 
 class SSSP():
     def __init__(self, grid, robot):
@@ -32,11 +33,16 @@ class SSSP():
 
             unvisited = [(v.distance, v) for v in self.grid.getAll()]
             heapq.heapify(unvisited)
-
-
         
         path = [goal.pos]
         self.shortest(goal, path)
+
+        ##clean up
+        for vertices in self.grid.vertices:
+            for vertex in vertices:
+                vertex.visited = False
+                vertex.previous = None
+                vertex.distance = sys.maxsize
 
         return path
 
