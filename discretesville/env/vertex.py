@@ -13,6 +13,7 @@ class Vertex:
         self.pos = pos
         self.isStaticObstacle = isStaticObstacle
         self.occupied = []
+        self.occupiedBy = []
         self.isStart = False
         self.isGoal = False
 

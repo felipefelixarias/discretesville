@@ -108,6 +108,8 @@ class SSSP():
 
         return ["NOPE"]
 
+
+    #Have to fix bug where collision happens in edge.
     def dynamicAStar(self):
         parent = {}
         gScore = {}
@@ -151,13 +153,19 @@ class SSSP():
                 ret.insert(0, c)
                 return ret
 
-            #here we might have to chek if neighborhood is occupied at timestep 
-
             for n in self.grid.getNeighbors(curr):
 
                 if timestep + 1 in n.occupied:
                     print("YP")
                     continue
+
+                if timestep in n.occupied and timestep+1 in curr.occupied:
+                    i = n.occupied.index(timestep)
+                    obs1 = n.occupiedBy[i]
+                    i = curr.occupied.index(timestep+1)
+                    obs2 = curr.occupiedBy[i]
+                    if obs1 == obs2:
+                        continue
 
                 tempGScore = gScore[(curr.pos[0], curr.pos[1], timestep)] + 1
 

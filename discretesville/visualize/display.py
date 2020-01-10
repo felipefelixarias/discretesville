@@ -10,12 +10,13 @@ import time
 
 
 DIMS = [
-    (3,7)
+    (9,9)
 ]
 
 img = "../images/logo.png"
 pacman = "../images/Pacman.png"
 x = "../images/x.png"
+ghost = "../images/ghost.png"
 qImg = QImage(img)
 
 class Pos(QWidget):
@@ -43,6 +44,9 @@ class Pos(QWidget):
         self.vertex.isStart = False
         self.vertex.isStaticObstacle = False
         self.inPath = False
+        self.isDynamicObstacle = False
+        self.vertex.occupied = []
+        self.vertex.occupiedBy = []
         self.update()
 
     def paintEvent(self, event):
@@ -57,6 +61,8 @@ class Pos(QWidget):
             outer, inner = color, color
         elif self.inPath:
             outer, inner = Qt.gray, Qt.blue
+        elif self.isDynamicObstacle:
+            outer, inner = Qt.gray, Qt.red
         else:
             outer, inner = Qt.gray, Qt.lightGray
 
@@ -67,9 +73,16 @@ class Pos(QWidget):
         p.setPen(pen)
         p.drawRect(r)
 
+        if self.inPath:
+            p.drawPixmap(r, QPixmap(pacman))
+
+        if self.isDynamicObstacle:
+            p.drawPixmap(r, QPixmap(ghost))
+
         if self.vertex.isStart:
             p.drawPixmap(r, QPixmap(pacman))
-        elif self.vertex.isGoal:
+            self.vertex.isStart = False
+        if self.vertex.isGoal:
             p.drawPixmap(r, QPixmap(x))
 
 
@@ -99,6 +112,7 @@ class Pos(QWidget):
                 obs.path.append(self.vertex)
                 self.ville.dynamicObstacles.append(obs)
                 self.vertex.occupied.append(len(obs.path)-1)
+                self.vertex.occupiedBy.append(obs)
                 #print(len(obs.path)-1)
 
 
@@ -109,6 +123,7 @@ class Pos(QWidget):
                 obs = self.ville.dynamicObstacles[-1]
                 obs.path.append(self.vertex)
                 self.vertex.occupied.append(len(obs.path)-1)
+                self.vertex.occupiedBy.append(obs)
                 #print(len(obs.path)-1)
 
 
@@ -149,6 +164,8 @@ class MainWindow(QMainWindow):
         self.reset_map()
 
         self.show()
+        self.path = []
+        self.timestep = 0
 
     def init_map(self):
         # Add positions to the map
@@ -172,23 +189,82 @@ class MainWindow(QMainWindow):
     def buttonPressed(self):
         if self.ville.robot.task.start is not None and self.ville.robot.task.goal is not None:
 
-            path = self.ville.sssp.dynamicAStar()
-            print(path)
-            for i,j in path:
-                w = self.grid.itemAtPosition(i,j).widget()
-                w.inPath = True
-            self.update()
+            self.path = self.ville.sssp.dynamicAStar()
+            #print(path)
+            
+                
+
+            #self.update()
             for obs in self.ville.dynamicObstacles:
                 print([o.pos for o in obs.path])
 
+            timer = QTimer(self)
+            timer.timeout.connect(self.updateCell)
+            timer.start(1000)
+
             self.ville.robot.task.start = None
             self.ville.robot.task.goal = None
+            
+            # for i,j in path:
+            #     w = self.grid.itemAtPosition(i,j).widget()
+            #     # w.inPath = True
+            #     # w.update()
+            #     # self.update()
+            #     QTimer.singleShot(100, lambda: self.updateCell(w))
         else:
             self.ville.robot.task.start = None
             self.ville.robot.task.goal = None
             self.ville.dynamicObstacles = []
+            self.path = []
             self.reset_map()
 
+    def updateCell(self):
+        #w.inPath = True
+        #w.update()
+        
+        #self.update()
+        #dynamicObstacles = self.ville.dynamicObstacles
+
+
+        if (len(self.path) > self.timestep):
+
+
+            if self.timestep > 0:
+                i,j = self.path[self.timestep-1]
+                w = self.grid.itemAtPosition(i,j).widget()
+                w.inPath = False
+                w.update()
+
+                #maybe hold this until the end?
+                obstaclesPast = [obs.path[self.timestep-1] for obs in self.ville.dynamicObstacles if len(obs.path) > self.timestep -1]
+
+                for o in obstaclesPast:
+                    i, j = o.pos
+                    w = self.grid.itemAtPosition(i,j).widget()
+                    w.isDynamicObstacle = False
+                    w.update()
+
+            obstacles = [obs.path[self.timestep] for obs in self.ville.dynamicObstacles if len(obs.path) > self.timestep]
+
+            #i,j = self.path.pop(0)
+            for o in obstacles:
+                i, j = o.pos
+                w = self.grid.itemAtPosition(i,j).widget()
+                w.isDynamicObstacle = True
+                w.update()
+
+            i,j = self.path[self.timestep]
+            w = self.grid.itemAtPosition(i,j).widget()
+            w.inPath = True
+            w.update()
+            #self.update()
+            #print("YP")
+            
+    
+            self.timestep += 1
+
+
+        
 if __name__ == '__main__':
     app = QApplication([])
     window = MainWindow()
