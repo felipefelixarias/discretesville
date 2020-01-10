@@ -38,3 +38,6 @@ class Grid:
                 if not self.vertices[i][j].isStaticObstacle and not self.vertices[i][j].visited:
                     out.append(self.vertices[i][j])
         return out
+    
+    def getVertex(self, x, y):
+        return self.vertices[x][y]

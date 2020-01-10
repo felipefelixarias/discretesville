@@ -10,7 +10,7 @@ import time
 
 
 DIMS = [
-    (15,17)
+    (3,7)
 ]
 
 img = "../images/logo.png"
@@ -98,6 +98,8 @@ class Pos(QWidget):
                 obs = DynamicObstacle()
                 obs.path.append(self.vertex)
                 self.ville.dynamicObstacles.append(obs)
+                self.vertex.occupied.append(len(obs.path)-1)
+                #print(len(obs.path)-1)
 
 
         if (e.button() == Qt.LeftButton):
@@ -106,6 +108,9 @@ class Pos(QWidget):
             else:
                 obs = self.ville.dynamicObstacles[-1]
                 obs.path.append(self.vertex)
+                self.vertex.occupied.append(len(obs.path)-1)
+                #print(len(obs.path)-1)
+
 
 
 class MainWindow(QMainWindow):
@@ -167,7 +172,8 @@ class MainWindow(QMainWindow):
     def buttonPressed(self):
         if self.ville.robot.task.start is not None and self.ville.robot.task.goal is not None:
 
-            path = self.ville.sssp.dijkstra()
+            path = self.ville.sssp.dynamicAStar()
+            print(path)
             for i,j in path:
                 w = self.grid.itemAtPosition(i,j).widget()
                 w.inPath = True

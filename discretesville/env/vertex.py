@@ -12,6 +12,7 @@ class Vertex:
         self.safeIntervals = []
         self.pos = pos
         self.isStaticObstacle = isStaticObstacle
+        self.occupied = []
         self.isStart = False
         self.isGoal = False
 
@@ -20,4 +21,5 @@ class Vertex:
 
     def __lt__(self, other):
         return self.distance < other.distance
+
 
