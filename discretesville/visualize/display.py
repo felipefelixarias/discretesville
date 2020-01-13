@@ -200,7 +200,7 @@ class MainWindow(QMainWindow):
 
             timer = QTimer(self)
             timer.timeout.connect(self.updateCell)
-            timer.start(1000)
+            timer.start(500)
 
             self.ville.robot.task.start = None
             self.ville.robot.task.goal = None
@@ -253,6 +253,7 @@ class MainWindow(QMainWindow):
                 w.isDynamicObstacle = True
                 w.update()
 
+            print(self.path[self.timestep])
             i,j = self.path[self.timestep]
             w = self.grid.itemAtPosition(i,j).widget()
             w.inPath = True

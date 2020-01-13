@@ -153,7 +153,10 @@ class SSSP():
                 ret.insert(0, c)
                 return ret
 
-            for n in self.grid.getNeighbors(curr):
+            neighbors = self.grid.getNeighbors(curr)
+            neighbors.append(curr)
+
+            for n in neighbors:
 
                 if timestep + 1 in n.occupied:
                     print("YP")
