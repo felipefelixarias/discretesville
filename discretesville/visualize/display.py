@@ -87,7 +87,10 @@ class Pos(QWidget):
 
 
     def setStaticObstacle(self):
-        self.vertex.isStaticObstacle = not self.vertex.isStaticObstacle
+        if not self.vertex.isStaticObstacle():
+            self.vertex.setAsStaticObstacle()
+        else:
+            self.vertex.setAsNoObstacle()
         self.update() 
 
     def setStartGoal(self):
@@ -102,8 +105,6 @@ class Pos(QWidget):
 
     def mouseReleaseEvent(self, e):
 
-        # if (e.button() == Qt.RightButton and not self.isStaticObstacle):
-        #     self.setStaticObstcale()
         if (e.button() == Qt.RightButton):
             if self.ville.robot.task.start is None or self.ville.robot.task.goal is None:
                 self.setStartGoal()
@@ -121,14 +122,10 @@ class Pos(QWidget):
                 obs.path.append(self.vertex)
                 self.vertex.setAsOccupied(len(obs.path)-1, obs)
 
-
-
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-
         self.numRows, self.numCols = DIMS[0]
-
         self.ville = Discretesville(self.numRows, self.numCols)
         
         w = QWidget()
@@ -139,11 +136,9 @@ class MainWindow(QMainWindow):
         self.button.setIconSize(QSize(32, 32))
         self.button.setIcon(QIcon(img))
         self.button.setFlat(True)
-
         self.button.pressed.connect(self.buttonPressed)
 
         hb.addWidget(self.button)
-
         vb = QVBoxLayout()
         vb.addLayout(hb)
 

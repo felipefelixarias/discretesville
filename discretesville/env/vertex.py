@@ -27,14 +27,15 @@ class Vertex:
             self.obsAfter = None
 
     def setAsOccupied(self, timestep, obstacle):
-        #check as soon as timestep is not in occupied
-        #may need a flag or a second check for adjacent free timesteps 
-        #assume interval will be one unit long, if not edit it dynamically?
 
         if timestep == 0:
             self.safeIntervals.clear()
+        elif len(self.safeIntervals) ==  0 and not self.isStaticObstacle:
+            si = self.SafeInterval()
+            si.begin = timestep + 1
+            si.obsBefore = obstacle
+            self.safeIntervals.append(si)
 
-        #check if there is already a safe interval
         if len(self.safeIntervals) > 0:
 
             last = self.safeIntervals[-1]
@@ -53,9 +54,27 @@ class Vertex:
 
                 self.safeIntervals.append(si)
 
-
         self.occupied.append(timestep)
         self.occupiedBy.append(obstacle)
+
+    def setAsStaticObstacle(self):
+        self.isStaticObstacle = True
+        self.safeIntervals.clear()
+
+    def setAsNoObstacle(self):
+        self.isStaticObstacle = True
+        si = self.SafeInterval()
+        self.safeIntervals.append(si)
+
+
+    def getSafeInterval(self, timestep):
+        #could make this faster than linear search
+
+        for si in self.safeIntervals:
+            if timestep >= si.begin and timestep <= si.end:
+                return si
+
+        return None
 
 
     def __eq__(self, other):
