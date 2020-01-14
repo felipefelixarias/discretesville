@@ -4,14 +4,15 @@ from PyQt5.QtCore import *
 
 from ville.discretesville import Discretesville
 from obstacles.dynamic import DynamicObstacle
+from visualize.cell import Cell
 
 import random
 import time
+import sys
+import json
 
 
-DIMS = [
-    (9,9)
-]
+ville = None
 
 img = "../images/logo.png"
 pacman = "../images/Pacman.png"
@@ -19,113 +20,11 @@ x = "../images/x.png"
 ghost = "../images/ghost.png"
 qImg = QImage(img)
 
-class Pos(QWidget):
-    expandable = pyqtSignal(int, int)
-    clicked = pyqtSignal()
-    ohno = pyqtSignal()
-
-    def __init__(self, x, y, ville, *args, **kwargs):
-        super(Pos, self).__init__(*args, **kwargs)
-
-        self.setFixedSize(QSize(20, 20))
-
-        self.x = x
-        self.y = y
-        self.ville = ville
-        self.vertex = self.ville.grid.vertices[x][y]
-        self.inPath = False
-
-        #TODO: Enable multiple click start and goal setting by having a flag in ville
-        self.isEven = False
-        
-
-    def reset(self):
-        self.vertex.isGoal = False
-        self.vertex.isStart = False
-        self.vertex.isStaticObstacle = False
-        self.inPath = False
-        self.isDynamicObstacle = False
-        self.vertex.occupied = []
-        self.vertex.occupiedBy = []
-        self.update()
-
-    def paintEvent(self, event):
-
-        p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
-
-        r = event.rect()
-
-        if self.vertex.isStaticObstacle:
-            color = self.palette().color(QPalette.Background)
-            outer, inner = color, color
-        elif self.inPath:
-            outer, inner = Qt.gray, Qt.blue
-        elif self.isDynamicObstacle:
-            outer, inner = Qt.gray, Qt.red
-        else:
-            outer, inner = Qt.gray, Qt.lightGray
-
-        p.fillRect(r, QBrush(inner))
-
-        pen = QPen(outer)
-        pen.setWidth(1)
-        p.setPen(pen)
-        p.drawRect(r)
-
-        if self.inPath:
-            p.drawPixmap(r, QPixmap(pacman))
-
-        if self.isDynamicObstacle:
-            p.drawPixmap(r, QPixmap(ghost))
-
-        if self.vertex.isStart:
-            p.drawPixmap(r, QPixmap(pacman))
-            self.vertex.isStart = False
-        if self.vertex.isGoal:
-            p.drawPixmap(r, QPixmap(x))
-
-
-    def setStaticObstacle(self):
-        if self.vertex.isStaticObstacle:
-            self.vertex.setAsNoObstacle()
-        else:
-            self.vertex.setAsStaticObstacle()
-        self.update() 
-
-    def setStartGoal(self):
-        if self.ville.robot.task.start is None: 
-            self.ville.robot.task.start = self.vertex
-            self.vertex.isStart = True
-        elif self.ville.robot.task.goal is None:
-            self.ville.robot.task.goal = self.vertex
-            self.vertex.isGoal = True
-       
-        self.update()
-
-    def mouseReleaseEvent(self, e):
-
-        if (e.button() == Qt.RightButton):
-            if self.ville.robot.task.start is None or self.ville.robot.task.goal is None:
-                self.setStartGoal()
-            else:
-                obs = DynamicObstacle()
-                obs.path.append(self.vertex)
-                self.ville.dynamicObstacles.append(obs)
-                self.vertex.setAsOccupied(len(obs.path)-1, obs)
-
-        if (e.button() == Qt.LeftButton):
-            if self.ville.robot.task.start is None and self.ville.robot.task.goal is None:
-                self.setStaticObstacle()
-            else:
-                obs = self.ville.dynamicObstacles[-1]
-                obs.path.append(self.vertex)
-                self.vertex.setAsOccupied(len(obs.path)-1, obs)
-
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self.numRows, self.numCols = DIMS[0]
+
+        self.numRows, self.numCols = ville["numRows"], ville["numCols"]
         self.ville = Discretesville(self.numRows, self.numCols)
         
         w = QWidget()
@@ -153,6 +52,33 @@ class MainWindow(QMainWindow):
         self.init_map()
         self.reset_map()
 
+        for obs in ville["staticObstacles"]:
+            self.ville.grid.getVertex(obs[0],obs[1]).setAsStaticObstacle()
+
+        for dynamicObstacle in ville["dynamicObstacles"]:
+            
+            path = dynamicObstacle["path"]
+
+            for i, cell in enumerate(path):
+                
+                v = self.ville.grid.getVertex(cell[0],cell[1])
+
+                if i == 0:
+                    obs = DynamicObstacle()
+                    obs.path.append(v)
+                    self.ville.dynamicObstacles.append(obs)
+                    v.setAsOccupied(len(obs.path)-1, obs)
+                else:
+                    obs = self.ville.dynamicObstacles[-1]
+                    obs.path.append(v)
+                    v.setAsOccupied(len(obs.path)-1, obs)
+
+        startCell = self.grid.itemAtPosition(ville["robot"]["start"][0],ville["robot"]["start"][1]).widget()
+        goalCell = self.grid.itemAtPosition(ville["robot"]["goal"][0],ville["robot"]["goal"][1]).widget()
+
+        startCell.setStartGoal()
+        goalCell.setStartGoal()
+
         self.show()
         self.path = []
         self.timestep = 0
@@ -161,7 +87,7 @@ class MainWindow(QMainWindow):
         # Add positions to the map
         for x in range(0, self.numRows):
             for y in range(0, self.numCols):
-                w = Pos(x, y, self.ville)
+                w = Cell(x, y, self.ville)
                 self.grid.addWidget(w, x, y)
                 w.update()
                 # Connect signal to handle expansion.
@@ -198,6 +124,7 @@ class MainWindow(QMainWindow):
             self.path = []
             self.reset_map()
 
+    #Function that updates the cells at each timestep for animation
     def updateCell(self):
 
         if (len(self.path) > self.timestep):
@@ -234,9 +161,18 @@ class MainWindow(QMainWindow):
     
             self.timestep += 1
 
-
         
 if __name__ == '__main__':
+    json_data = sys.argv[1]
+    print(json_data)
+
+    with open(json_data, 'r') as f:
+        ville = json.load(f)
+
+    print(ville)
+
     app = QApplication([])
+
     window = MainWindow()
+    
     app.exec_()

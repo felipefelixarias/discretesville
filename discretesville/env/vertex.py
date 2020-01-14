@@ -21,10 +21,11 @@ class Vertex:
 
     class SafeInterval:
         def __init__(self):
-            self.begin = 0
+            self.start = 0
             self.end = sys.maxsize
             self.obsBefore = None
             self.obsAfter = None
+            self.index = 0
 
     def setAsOccupied(self, timestep, obstacle):
 
@@ -32,7 +33,7 @@ class Vertex:
             self.safeIntervals.clear()
         elif len(self.safeIntervals) ==  0 and not self.isStaticObstacle:
             si = self.SafeInterval()
-            si.begin = timestep + 1
+            si.start = timestep + 1
             si.obsBefore = obstacle
             self.safeIntervals.append(si)
 
@@ -40,8 +41,8 @@ class Vertex:
 
             last = self.safeIntervals[-1]
 
-            if last.begin == timestep:
-                last.begin = timestep + 1
+            if last.start == timestep:
+                last.start = timestep + 1
 
             else:
                 last = self.safeIntervals[-1]
@@ -49,8 +50,9 @@ class Vertex:
                 last.obsAfter = obstacle
 
                 si = self.SafeInterval()
-                si.begin = timestep + 1
+                si.start = timestep + 1
                 si.obsBefore = obstacle
+                si.index = last.index + 1
 
                 self.safeIntervals.append(si)
 
@@ -68,14 +70,20 @@ class Vertex:
 
 
     def getSafeInterval(self, timestep):
-        #could make this faster than linear search
+        #TODO: make this faster than linear search
 
         for si in self.safeIntervals:
-            if timestep >= si.begin and timestep <= si.end:
+            if timestep >= si.start and timestep <= si.end:
                 return si
 
         return None
 
+    def getSafeIntervalByIdx(self,idx):
+        if idx >= len(self.safeIntervals) or idx<0:
+            print("Invalid index for interval.")
+            return None
+
+        return self.safeIntervals[idx]
 
     def __eq__(self, other):
         return self.pos == other.pos

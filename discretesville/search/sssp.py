@@ -1,5 +1,6 @@
 import heapq
 import sys
+import json
 
 class SSSP():
     def __init__(self, grid, robot):
@@ -41,7 +42,7 @@ class SSSP():
         for vertices in self.grid.vertices:
             for vertex in vertices:
                 vertex.visited = False
-                vertex.previous = None    def se
+                vertex.previous = None    
 
         return path
 
@@ -54,8 +55,9 @@ class SSSP():
     def h(self, start, goal):
         x1, y1 = start.pos
         x2, y2 = goal.pos
-        return abs(x2-x1) + abs(y2-y1)    def se
+        return abs(x2-x1) + abs(y2-y1)   
 
+    def what(self,parent,curr,totalPath):
         curr = parent[curr.pos]
 
         while parent[curr] is not None:
@@ -194,6 +196,11 @@ class SSSP():
             _, timestep, curr = heapq.heappop(openSet)
 
             if curr is goal and timestep not in curr.occupied:
+                
+                for p in parent:
+                    print(p, ": ", parent[p])
+                return[]
+
                 t=timestep
                 ret = [curr.pos]
                 c = parent[(curr.pos[0], curr.pos[1], timestep)]
@@ -206,42 +213,30 @@ class SSSP():
                 ret.insert(0, c)
                 return ret
 
-            #Here instead of looking at neighbors, we wanna generate them weird
+            successors = self.getSuccessors(curr, timestep)
 
-            neighbors = self.grid.getNeighbors(curr)
-            neighbors.append(curr)
+            for cfg, si, t in successors:
+                
+                #this might need to be timestep or sum or si.index
+                tempGScore = gScore[(curr.pos[0], curr.pos[1], timestep)] + t - timestep
+                #not plus 1 here, plus however many you had to wait
 
-            for n in neighbors:
+                if (cfg.pos[0], cfg.pos[1], t) not in gScore:
+                    gScore[(cfg.pos[0], cfg.pos[1], t)] = sys.maxsize
 
-                if timestep + 1 in n.occupied:
-                    print("YP")
-                    continue
+                if tempGScore < gScore[(cfg.pos[0], cfg.pos[1], t)]:
+                    parent[(cfg.pos[0], cfg.pos[1], t)] = curr.pos
+                    gScore[(cfg.pos[0], cfg.pos[1], t)] = tempGScore
+                    fScore[(cfg.pos[0], cfg.pos[1], t)] = tempGScore + self.h(cfg, goal)
 
-                if timestep in n.occupied and timestep+1 in curr.occupied:
-                    i = n.occupied.index(timestep)
-                    obs1 = n.occupiedBy[i]
-                    i = curr.occupied.index(timestep+1)
-                    obs2 = curr.occupiedBy[i]
-                    if obs1 == obs2:
-                        continue
-
-                tempGScore = gScore[(curr.pos[0], curr.pos[1], timestep)] + 1
-
-                if (n.pos[0], n.pos[1], timestep+1) not in gScore:
-                    gScore[(n.pos[0], n.pos[1], timestep+1)] = sys.maxsize
-
-                if tempGScore < gScore[(n.pos[0], n.pos[1], timestep+1)]:
-                    parent[(n.pos[0], n.pos[1], timestep+1)] = curr.pos
-                    gScore[(n.pos[0], n.pos[1], timestep+1)] = tempGScore
-                    fScore[(n.pos[0], n.pos[1], timestep+1)] = gScore[(n.pos[0], n.pos[1], timestep+1)] + self.h(n, goal)
-
-                    if (fScore[(n.pos[0], n.pos[1], timestep+1)], timestep+1, n) not in openSet:
-                        heapq.heappush(openSet, (fScore[(n.pos[0], n.pos[1], timestep+1)], timestep+1, n))
+                    if (fScore[(cfg.pos[0], cfg.pos[1], t)], t, cfg) not in openSet:
+                        heapq.heappush(openSet, (fScore[(cfg.pos[0], cfg.pos[1], t)], t, cfg))
 
         print("Could not find path")
         return []
 
     def getSuccessors(self, s, timestep):
+        
         successors = []
         ms = self.grid.getNeighbors(s)
         #ms.append(s)? I dont think so because you cant wait in place to get to another 
@@ -258,11 +253,12 @@ class SSSP():
             
             #gotta get end of the safe interval s is currently on + 1
 
-            for si in ms.safeIntervals:  #next vertex's safe intervals
+            for si in m.safeIntervals:  #next vertex's safe intervals
+
                 if si.start > end or si.end < start:
                     continue
 
-                t = getEarliestArrivalTime(currInterval ,si, timestep, )
+                t = self.getEarliestArrivalTime(currInterval, si, start)
                 
                 if t is None:
                     continue
@@ -270,7 +266,8 @@ class SSSP():
 
                 #TODO
                 #get state of configuration cfg with interval i and time t
-                
+
+                s = (m, si, t)              
                 successors.append(s)
 
         return successors
@@ -293,14 +290,17 @@ class SSSP():
         #need to make sure that the obstacles aren't just trading spaces
 
         #this might need to be <= and might be wrong
+
+        if currSI.end + 1 == targetSI.start and currSI.obsAfter == targetSI.obsBefore:
+            print("Robot and dynamic obstacle switched places")
+            #print(currSI.start, " ", currSI.end)
+            #print(targetSI.start, " ", targetSI.end)
+            return None
+
         if targetSI.start < timestep:
             return timestep
         else:
-            return targetSI.start
-
-        #if targetSI.end == currSI.start
-
-    
+            return targetSI.start   
 
         return None
 
