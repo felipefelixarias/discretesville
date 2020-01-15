@@ -80,20 +80,20 @@ class MainWindow(QMainWindow):
                     v.setAsOccupied(len(obs.path)-1, obs)
 
 
-        for dynamicObstacle in ville["dynamicObstacles"]:
+        # for dynamicObstacle in ville["dynamicObstacles"]:
             
-            path = dynamicObstacle["path"]
+        #     path = dynamicObstacle["path"]
 
-            for i, cell in enumerate(path):
+        #     for i, cell in enumerate(path):
                 
-                v = self.ville.grid.getVertex(cell[0],cell[1])
+        #         v = self.ville.grid.getVertex(cell[0],cell[1])
 
-                print("#"*10)
-                print(v.pos)
-                for si in v.safeIntervals:
-                    print("------")
-                    print(si.start)
-                    print(si.end)
+        #         print("#"*10)
+        #         print(v.pos)
+        #         for si in v.safeIntervals:
+        #             print("------")
+        #             print(si.start)
+        #             print(si.end)
 
         self.show()
         self.path = []

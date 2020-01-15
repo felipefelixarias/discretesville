@@ -147,7 +147,6 @@ class SSSP():
             for n in neighbors:
 
                 if timestep + 1 in n.occupied:
-                    print("YP")
                     continue
 
                 if timestep in n.occupied and timestep+1 in curr.occupied:
@@ -174,7 +173,52 @@ class SSSP():
         print("Could not find path")
         return []
 
+    #Have to fix bug where collision happens in edge.
+    def aSIPPAStar(self):
+        parent = {}
+        gScore = {}
+        fScore = {}
 
+        start = self.robot.task.start
+        goal = self.robot.task.goal
+        
+        gScore[(start.pos[0], start.pos[1], 0)] = 0
+        fScore[(start.pos[0], start.pos[1], 0)] = self.h(start, goal)
+        parent[(start.pos[0], start.pos[1], 0)] = None
+
+        openSet = [(0, 0, start)]
+        heapq.heapify(openSet)
+        
+        while len(openSet) > 0:
+            _, idx, curr = heapq.heappop(openSet)
+
+            if curr is goal:
+                
+                for p in parent:
+                    print(p, ": ", parent[p])
+                return[]
+
+            successors = self.getSuccessors(curr, timestep)
+
+            for cfg, si, t in successors:
+                
+                #this might need to be timestep or sum or si.index
+                tempGScore = gScore[(curr.pos[0], curr.pos[1], timestep)] + t - timestep
+                #not plus 1 here, plus however many you had to wait
+
+                if (cfg.pos[0], cfg.pos[1], t) not in gScore:
+                    gScore[(cfg.pos[0], cfg.pos[1], t)] = sys.maxsize
+
+                if tempGScore < gScore[(cfg.pos[0], cfg.pos[1], t)]:
+                    parent[(cfg.pos[0], cfg.pos[1], t)] = curr.pos
+                    gScore[(cfg.pos[0], cfg.pos[1], t)] = tempGScore
+                    fScore[(cfg.pos[0], cfg.pos[1], t)] = tempGScore + self.h(cfg, goal)
+
+                    if (fScore[(cfg.pos[0], cfg.pos[1], t)], t, cfg) not in openSet:
+                        heapq.heappush(openSet, (fScore[(cfg.pos[0], cfg.pos[1], t)], t, cfg))
+
+        print("Could not find path")
+        return []
 
     #Have to fix bug where collision happens in edge.
     def SIPPAStar(self):
@@ -197,20 +241,37 @@ class SSSP():
 
             if curr is goal and timestep not in curr.occupied:
                 
-                for p in parent:
-                    print(p, ": ", parent[p])
-                return[]
+                # for p in parent:
+                #     print(p, ": ", parent[p])
+                # print("DONE!")
+                # return []
 
-                t=timestep
-                ret = [curr.pos]
-                c = parent[(curr.pos[0], curr.pos[1], timestep)]
+                test = []
+                ret = []
+                c = (curr.pos[0], curr.pos[1], timestep)
+                past = None
 
-                while parent[(c[0], c[1], t-1)] is not None:
-                    ret.insert(0, c)
-                    t = t-1
-                    c = parent[(c[0], c[1], t)]
+                while c is not None:
 
-                ret.insert(0, c)
+                    test.insert(0, c)
+                    
+                    if past is None:
+                        ret.insert(0,(c[0],c[1]))
+                    else:
+                        print("not none")
+                        print(c[2])
+                        print(past[2])
+                        for _ in range(past[2]-c[2]):
+                            print("Save me god")
+                            ret.insert(0, (c[0],c[1]))
+
+                    past = c
+
+                    c = parent[c]
+                    
+                print(test)
+                print(ret)
+
                 return ret
 
             successors = self.getSuccessors(curr, timestep)
@@ -225,7 +286,7 @@ class SSSP():
                     gScore[(cfg.pos[0], cfg.pos[1], t)] = sys.maxsize
 
                 if tempGScore < gScore[(cfg.pos[0], cfg.pos[1], t)]:
-                    parent[(cfg.pos[0], cfg.pos[1], t)] = curr.pos
+                    parent[(cfg.pos[0], cfg.pos[1], t)] = (curr.pos[0], curr.pos[1], timestep)
                     gScore[(cfg.pos[0], cfg.pos[1], t)] = tempGScore
                     fScore[(cfg.pos[0], cfg.pos[1], t)] = tempGScore + self.h(cfg, goal)
 
@@ -250,7 +311,7 @@ class SSSP():
             start = timestep + 1
             end = currInterval.end + 1
 
-            
+            #
             #gotta get end of the safe interval s is currently on + 1
 
             for si in m.safeIntervals:  #next vertex's safe intervals
@@ -292,7 +353,7 @@ class SSSP():
         #this might need to be <= and might be wrong
 
         if currSI.end + 1 == targetSI.start and currSI.obsAfter == targetSI.obsBefore:
-            print("Robot and dynamic obstacle switched places")
+            #print("Robot and dynamic obstacle switched places")
             #print(currSI.start, " ", currSI.end)
             #print(targetSI.start, " ", targetSI.end)
             return None
