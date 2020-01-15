@@ -29,15 +29,16 @@ class Vertex:
 
     def setAsOccupied(self, timestep, obstacle):
 
-        if timestep == 0:
+        if self.isStaticObstacle:
             self.safeIntervals.clear()
-        elif len(self.safeIntervals) ==  0 and not self.isStaticObstacle:
-            si = self.SafeInterval()
-            si.start = timestep + 1
-            si.obsBefore = obstacle
-            self.safeIntervals.append(si)
 
-        if len(self.safeIntervals) > 0:
+        elif timestep == 0:
+            last = self.safeIntervals[-1]
+            last.start = timestep + 1
+            last.obsBefore = obstacle
+
+        #changed this from if to elif
+        elif len(self.safeIntervals) > 0:
 
             last = self.safeIntervals[-1]
 
@@ -64,14 +65,12 @@ class Vertex:
         self.safeIntervals.clear()
 
     def setAsNoObstacle(self):
-        self.isStaticObstacle = True
+        self.isStaticObstacle = False
         si = self.SafeInterval()
         self.safeIntervals.append(si)
 
-
     def getSafeInterval(self, timestep):
         #TODO: make this faster than linear search
-
         for si in self.safeIntervals:
             if timestep >= si.start and timestep <= si.end:
                 return si

@@ -55,6 +55,12 @@ class MainWindow(QMainWindow):
         for obs in ville["staticObstacles"]:
             self.ville.grid.getVertex(obs[0],obs[1]).setAsStaticObstacle()
 
+        startCell = self.grid.itemAtPosition(ville["robot"]["start"][0],ville["robot"]["start"][1]).widget()
+        goalCell = self.grid.itemAtPosition(ville["robot"]["goal"][0],ville["robot"]["goal"][1]).widget()
+
+        startCell.setStartGoal()
+        goalCell.setStartGoal()
+
         for dynamicObstacle in ville["dynamicObstacles"]:
             
             path = dynamicObstacle["path"]
@@ -73,11 +79,21 @@ class MainWindow(QMainWindow):
                     obs.path.append(v)
                     v.setAsOccupied(len(obs.path)-1, obs)
 
-        startCell = self.grid.itemAtPosition(ville["robot"]["start"][0],ville["robot"]["start"][1]).widget()
-        goalCell = self.grid.itemAtPosition(ville["robot"]["goal"][0],ville["robot"]["goal"][1]).widget()
 
-        startCell.setStartGoal()
-        goalCell.setStartGoal()
+        for dynamicObstacle in ville["dynamicObstacles"]:
+            
+            path = dynamicObstacle["path"]
+
+            for i, cell in enumerate(path):
+                
+                v = self.ville.grid.getVertex(cell[0],cell[1])
+
+                print("#"*10)
+                print(v.pos)
+                for si in v.safeIntervals:
+                    print("------")
+                    print(si.start)
+                    print(si.end)
 
         self.show()
         self.path = []
