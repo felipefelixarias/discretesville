@@ -1,30 +1,25 @@
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QPushButton, QVBoxLayout, QGridLayout
+from PyQt5.QtCore import QSize, QTimer
 
 from ville.discretesville import Discretesville
 from obstacles.dynamic import DynamicObstacle
 from visualize.cell import Cell
 
-import random
-import time
-import sys
-import json
-
-
-ville = None
-
 img = "../images/logo.png"
-pacman = "../images/Pacman.png"
-x = "../images/x.png"
-ghost = "../images/ghost.png"
-qImg = QImage(img)
 
 class MainWindow(QMainWindow):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, villeDic=None, numRows=0, numCols=0, searchAlg="SIPPAStar", *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
 
-        self.numRows, self.numCols = ville["numRows"], ville["numCols"]
+        self.villeDic = villeDic
+        self.searchAlg = searchAlg
+
+        if self.villeDic is not None:
+            self.numRows, self.numCols = self.villeDic["numRows"], self.villeDic["numCols"]
+        else:
+            self.numRows, self.numCols = numRows,numCols
+
         self.ville = Discretesville(self.numRows, self.numCols)
         
         w = QWidget()
@@ -52,48 +47,8 @@ class MainWindow(QMainWindow):
         self.init_map()
         self.reset_map()
 
-        for obs in ville["staticObstacles"]:
-            self.ville.grid.getVertex(obs[0],obs[1]).setAsStaticObstacle()
-
-        startCell = self.grid.itemAtPosition(ville["robot"]["start"][0],ville["robot"]["start"][1]).widget()
-        goalCell = self.grid.itemAtPosition(ville["robot"]["goal"][0],ville["robot"]["goal"][1]).widget()
-
-        startCell.setStartGoal()
-        goalCell.setStartGoal()
-
-        for dynamicObstacle in ville["dynamicObstacles"]:
-            
-            path = dynamicObstacle["path"]
-
-            for i, cell in enumerate(path):
-                
-                v = self.ville.grid.getVertex(cell[0],cell[1])
-
-                if i == 0:
-                    obs = DynamicObstacle()
-                    obs.path.append(v)
-                    self.ville.dynamicObstacles.append(obs)
-                    v.setAsOccupied(len(obs.path)-1, obs)
-                else:
-                    obs = self.ville.dynamicObstacles[-1]
-                    obs.path.append(v)
-                    v.setAsOccupied(len(obs.path)-1, obs)
-
-
-        # for dynamicObstacle in ville["dynamicObstacles"]:
-            
-        #     path = dynamicObstacle["path"]
-
-        #     for i, cell in enumerate(path):
-                
-        #         v = self.ville.grid.getVertex(cell[0],cell[1])
-
-        #         print("#"*10)
-        #         print(v.pos)
-        #         for si in v.safeIntervals:
-        #             print("------")
-        #             print(si.start)
-        #             print(si.end)
+        if self.villeDic is not None:
+            self.loadVille()
 
         self.show()
         self.path = []
@@ -121,10 +76,10 @@ class MainWindow(QMainWindow):
     def buttonPressed(self):
         if self.ville.robot.task.start is not None and self.ville.robot.task.goal is not None:
 
-            self.path = self.ville.sssp.SIPPAStar()
-
-            for obs in self.ville.dynamicObstacles:
-                print([o.pos for o in obs.path])
+            if self.searchAlg == "SIPPAStar":
+                self.path = self.ville.sssp.SIPPAStar()
+            elif self.searchAlg == "dynamicAStar":
+                self.path = self.ville.sssp.dynamicAStar()
 
             timer = QTimer(self)
             timer.timeout.connect(self.updateCell)
@@ -176,19 +131,50 @@ class MainWindow(QMainWindow):
             w.update()         
     
             self.timestep += 1
-
-        
-if __name__ == '__main__':
-    json_data = sys.argv[1]
-    print(json_data)
-
-    with open(json_data, 'r') as f:
-        ville = json.load(f)
-
-    print(ville)
-
-    app = QApplication([])
-
-    window = MainWindow()
     
-    app.exec_()
+    def printRelevantSafeIntervals(self):
+        for dynamicObstacle in ville["dynamicObstacles"]:
+            
+            path = dynamicObstacle["path"]
+
+            for _, cell in enumerate(path):
+                
+                v = self.ville.grid.getVertex(cell[0],cell[1])
+
+                print("#"*10)
+                print(v.pos)
+                for si in v.safeIntervals:
+                    print("------")
+                    print(si.start)
+                    print(si.end)
+
+    def loadVille(self):
+
+        ville = self.villeDic
+
+        for obs in ville["staticObstacles"]:
+            self.ville.grid.getVertex(obs[0],obs[1]).setAsStaticObstacle()
+
+        startCell = self.grid.itemAtPosition(ville["robot"]["start"][0],ville["robot"]["start"][1]).widget()
+        goalCell = self.grid.itemAtPosition(ville["robot"]["goal"][0],ville["robot"]["goal"][1]).widget()
+
+        startCell.setStartGoal()
+        goalCell.setStartGoal()
+
+        for dynamicObstacle in ville["dynamicObstacles"]:
+            
+            path = dynamicObstacle["path"]
+
+            for i, cell in enumerate(path):
+                
+                v = self.ville.grid.getVertex(cell[0],cell[1])
+
+                if i == 0:
+                    obs = DynamicObstacle()
+                    obs.path.append(v)
+                    self.ville.dynamicObstacles.append(obs)
+                    v.setAsOccupied(len(obs.path)-1, obs)
+                else:
+                    obs = self.ville.dynamicObstacles[-1]
+                    obs.path.append(v)
+                    v.setAsOccupied(len(obs.path)-1, obs)
