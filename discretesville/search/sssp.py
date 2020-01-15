@@ -241,11 +241,6 @@ class SSSP():
 
             if curr is goal and timestep not in curr.occupied:
                 
-                # for p in parent:
-                #     print(p, ": ", parent[p])
-                # print("DONE!")
-                # return []
-
                 test = []
                 ret = []
                 c = (curr.pos[0], curr.pos[1], timestep)
@@ -258,19 +253,11 @@ class SSSP():
                     if past is None:
                         ret.insert(0,(c[0],c[1]))
                     else:
-                        print("not none")
-                        print(c[2])
-                        print(past[2])
                         for _ in range(past[2]-c[2]):
-                            print("Save me god")
                             ret.insert(0, (c[0],c[1]))
 
                     past = c
-
                     c = parent[c]
-                    
-                print(test)
-                print(ret)
 
                 return ret
 
@@ -300,19 +287,12 @@ class SSSP():
         
         successors = []
         ms = self.grid.getNeighbors(s)
-        #ms.append(s)? I dont think so because you cant wait in place to get to another 
-        #safe interval
-
         currInterval = s.getSafeInterval(timestep)
-
 
         for m in ms:
             
             start = timestep + 1
             end = currInterval.end + 1
-
-            #
-            #gotta get end of the safe interval s is currently on + 1
 
             for si in m.safeIntervals:  #next vertex's safe intervals
 
@@ -323,9 +303,7 @@ class SSSP():
                 
                 if t is None:
                     continue
-                #get earliest arrival time at m during interval i with no collisions
 
-                #TODO
                 #get state of configuration cfg with interval i and time t
 
                 s = (m, si, t)              
@@ -334,28 +312,8 @@ class SSSP():
         return successors
 
     def getEarliestArrivalTime(self, currSI, targetSI, timestep):
-        #TODO
-
-        #Here we must check for collisions to determine if we can get in on this safe interval at ALL
-        #These are not valid 
-        
-        #this is already done
-        #if targetSI.end <= timestep:
-        #    return None
-
-        #TODO check if i can to si.start
-
-        #or if i can get to timestep
-
-
-        #need to make sure that the obstacles aren't just trading spaces
-
-        #this might need to be <= and might be wrong
 
         if currSI.end + 1 == targetSI.start and currSI.obsAfter == targetSI.obsBefore:
-            #print("Robot and dynamic obstacle switched places")
-            #print(currSI.start, " ", currSI.end)
-            #print(targetSI.start, " ", targetSI.end)
             return None
 
         if targetSI.start < timestep:

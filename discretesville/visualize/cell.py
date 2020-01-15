@@ -1,20 +1,13 @@
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+from PyQt5.QtGui import QIcon, QImage, QPainter, QPalette, QPixmap, QBrush, QPen
+from PyQt5.QtWidgets import QWidget
+from PyQt5.QtCore import QSize, QTimer, pyqtSignal, Qt
 
 from ville.discretesville import Discretesville
 from obstacles.dynamic import DynamicObstacle
 
-import random
-import time
-import sys
-import json
-
-img = "../images/logo.png"
 pacman = "../images/Pacman.png"
 x = "../images/x.png"
 ghost = "../images/ghost.png"
-qImg = QImage(img)
 
 class Cell(QWidget):
     expandable = pyqtSignal(int, int)
@@ -31,9 +24,6 @@ class Cell(QWidget):
         self.ville = ville
         self.vertex = self.ville.grid.vertices[x][y]
         self.inPath = False
-
-        #TODO: Enable multiple click start and goal setting by having a flag in ville
-        self.isEven = False
         
     def reset(self):
         self.vertex.isGoal = False
@@ -80,7 +70,6 @@ class Cell(QWidget):
             self.vertex.isStart = False
         if self.vertex.isGoal:
             p.drawPixmap(r, QPixmap(x))
-
 
     def setStaticObstacle(self):
         if self.vertex.isStaticObstacle:
