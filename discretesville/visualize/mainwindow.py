@@ -76,10 +76,17 @@ class MainWindow(QMainWindow):
     def buttonPressed(self):
         if self.ville.robot.task.start is not None and self.ville.robot.task.goal is not None:
 
-            if self.searchAlg == "SIPPAStar":
+            if self.searchAlg == "SIPPA*":
                 self.path = self.ville.sssp.SIPPAStar()
-            elif self.searchAlg == "dynamicAStar":
+            elif self.searchAlg == "dynamicA*":
                 self.path = self.ville.sssp.dynamicAStar()
+            elif self.searchAlg == "dijkstra":
+                self.path = self.ville.sssp.dijkstra()
+            elif self.searchAlg == "A*":
+                self.path = self.ville.sssp.aStar()
+            else:
+                print("Invalid search algorithm, using SIPP A*")
+                self.path = self.ville.sssp.SIPPAStar()
 
             timer = QTimer(self)
             timer.timeout.connect(self.updateCell)
