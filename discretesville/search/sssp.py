@@ -1,71 +1,72 @@
-import heapq
-import sys
-import json
+from heapq import heapify, heappop, heappush
+from sys import maxsize
 
 class SSSP():
     def __init__(self, grid, robot):
         self.grid = grid
         self.robot = robot
 
+    #TODO Dijkstra should be able to return either a path or parent and score
+    # maybe it should return parent and score by default and the extra step is
+    # taken in main?
+
     def dijkstra(self):
+        parent = {}
+        score = {}
+        #TODO change this visited from a dic to a set (faster?)
+        visited = {}
         start = self.robot.task.start
         goal = self.robot.task.goal
 
-        start.distance = 0
-        unvisited = [(v.distance, v) for v in self.grid.getAll()]
-        heapq.heapify(unvisited)
+        score[start.pos] = 0
+        parent[start.pos] = None 
+        unvisited = [(0, start)]
+        heapify(unvisited)
 
         while(len(unvisited) > 0):
-            uv = heapq.heappop(unvisited)
+
+            uv = heappop(unvisited)
             current = uv[1]
-            current.visited = True
-
+            visited[current.pos] = True
+            
             for n in self.grid.getNeighbors(current):
-                if n.visited:
+
+                if n.pos in visited:
                     continue
-                newDist = current.distance + 1
+
+                if n.pos not in score:
+                    score[n.pos] = maxsize
+                    parent[n.pos] = None
+
+                newDist = score[current.pos] + 1
                 
-                if newDist < n.distance:
-                    n.distance = newDist
-                    n.previous = current
-                
-            while len(unvisited) > 0:
-                heapq.heappop(unvisited)
+                if newDist < score[n.pos]:
+                    score[n.pos] = newDist
+                    parent[n.pos] = current.pos
 
-            unvisited = [(v.distance, v) for v in self.grid.getAll()]
-            heapq.heapify(unvisited)
-        
-        path = [goal.pos]
-        self.shortest(goal, path)
+                heappush(unvisited, (score[n.pos], n))
 
-        ##clean up
-        for vertices in self.grid.vertices:
-            for vertex in vertices:
-                vertex.visited = False
-                vertex.previous = None    
+        if goal.pos not in parent:
+            print("Could not find path")
+            return []
+        else:
+            return self.extractPath(goal.pos, parent)
 
-        return path
+    def extractPath(self, goal, parent):
+            ret = []
+            temp = goal
 
-    def shortest(self, v, path):
-        if v.previous is not None:
-            path.append(v.previous.pos)
-            self.shortest(v.previous, path)
-        return
+            while temp is not None:
+                ret.insert(0, (temp[0], temp[1]))
+                temp = parent[temp]
+            
+            return ret
 
     def h(self, start, goal):
         x1, y1 = start.pos
         x2, y2 = goal.pos
         return abs(x2-x1) + abs(y2-y1)   
 
-    def what(self,parent,curr,totalPath):
-        curr = parent[curr.pos]
-
-        while parent[curr] is not None:
-            totalPath.insert(0, curr)
-            curr = parent[curr]
-
-        totalPath.insert(0, curr)
-        return totalPath
 
     def aStar(self):
         parent = {}
@@ -76,23 +77,21 @@ class SSSP():
         goal = self.robot.task.goal
 
         for v in self.grid.getAll():
-            gScore[v.pos] = sys.maxsize
-            fScore[v.pos] = sys.maxsize
+            gScore[v.pos] = maxsize
+            fScore[v.pos] = maxsize
         
         gScore[start.pos] = 0
         fScore[start.pos] = self.h(start, goal)
         parent[start.pos] = None
 
-
         openSet = [(0, start)]
-        heapq.heapify(openSet)
-
+        heapify(openSet)
         
         while len(openSet) > 0:
-            _, curr = heapq.heappop(openSet)
+            _, curr = heappop(openSet)
 
             if curr is goal:
-                return self.reconstructPath(parent, curr)
+                return self.extractPath(curr.pos, parent)
 
             for n in self.grid.getNeighbors(curr):
                 tempGScore = gScore[curr.pos] + 1
@@ -103,7 +102,7 @@ class SSSP():
                     fScore[n.pos] = gScore[n.pos] + self.h(n, goal)
 
                     if (fScore[n.pos], n) not in openSet:
-                        heapq.heappush(openSet, (fScore[n.pos], n))
+                        heappush(openSet, (fScore[n.pos], n))
 
         print("Could not find path")
         return []
@@ -123,23 +122,13 @@ class SSSP():
         parent[(start.pos[0], start.pos[1], 0)] = None
 
         openSet = [(0, 0, start)]
-        heapq.heapify(openSet)
+        heapify(openSet)
         
         while len(openSet) > 0:
-            _, timestep, curr = heapq.heappop(openSet)
+            _, timestep, curr = heappop(openSet)
 
             if curr is goal and timestep not in curr.occupied:
-                t=timestep
-                ret = [curr.pos]
-                c = parent[(curr.pos[0], curr.pos[1], timestep)]
-
-                while parent[(c[0], c[1], t-1)] is not None:
-                    ret.insert(0, c)
-                    t = t-1
-                    c = parent[(c[0], c[1], t)]
-
-                ret.insert(0, c)
-                return ret
+                return self.extractPath((curr.pos[0], curr.pos[1], timestep), parent)
 
             neighbors = self.grid.getNeighbors(curr)
             neighbors.append(curr)
@@ -160,67 +149,19 @@ class SSSP():
                 tempGScore = gScore[(curr.pos[0], curr.pos[1], timestep)] + 1
 
                 if (n.pos[0], n.pos[1], timestep+1) not in gScore:
-                    gScore[(n.pos[0], n.pos[1], timestep+1)] = sys.maxsize
+                    gScore[(n.pos[0], n.pos[1], timestep+1)] = maxsize
 
                 if tempGScore < gScore[(n.pos[0], n.pos[1], timestep+1)]:
-                    parent[(n.pos[0], n.pos[1], timestep+1)] = curr.pos
+                    parent[(n.pos[0], n.pos[1], timestep+1)] = (curr.pos[0], curr.pos[1], timestep)
                     gScore[(n.pos[0], n.pos[1], timestep+1)] = tempGScore
                     fScore[(n.pos[0], n.pos[1], timestep+1)] = gScore[(n.pos[0], n.pos[1], timestep+1)] + self.h(n, goal)
 
                     if (fScore[(n.pos[0], n.pos[1], timestep+1)], timestep+1, n) not in openSet:
-                        heapq.heappush(openSet, (fScore[(n.pos[0], n.pos[1], timestep+1)], timestep+1, n))
+                        heappush(openSet, (fScore[(n.pos[0], n.pos[1], timestep+1)], timestep+1, n))
 
         print("Could not find path")
         return []
 
-    #Have to fix bug where collision happens in edge.
-    def aSIPPAStar(self):
-        parent = {}
-        gScore = {}
-        fScore = {}
-
-        start = self.robot.task.start
-        goal = self.robot.task.goal
-        
-        gScore[(start.pos[0], start.pos[1], 0)] = 0
-        fScore[(start.pos[0], start.pos[1], 0)] = self.h(start, goal)
-        parent[(start.pos[0], start.pos[1], 0)] = None
-
-        openSet = [(0, 0, start)]
-        heapq.heapify(openSet)
-        
-        while len(openSet) > 0:
-            _, idx, curr = heapq.heappop(openSet)
-
-            if curr is goal:
-                
-                for p in parent:
-                    print(p, ": ", parent[p])
-                return[]
-
-            successors = self.getSuccessors(curr, timestep)
-
-            for cfg, si, t in successors:
-                
-                #this might need to be timestep or sum or si.index
-                tempGScore = gScore[(curr.pos[0], curr.pos[1], timestep)] + t - timestep
-                #not plus 1 here, plus however many you had to wait
-
-                if (cfg.pos[0], cfg.pos[1], t) not in gScore:
-                    gScore[(cfg.pos[0], cfg.pos[1], t)] = sys.maxsize
-
-                if tempGScore < gScore[(cfg.pos[0], cfg.pos[1], t)]:
-                    parent[(cfg.pos[0], cfg.pos[1], t)] = curr.pos
-                    gScore[(cfg.pos[0], cfg.pos[1], t)] = tempGScore
-                    fScore[(cfg.pos[0], cfg.pos[1], t)] = tempGScore + self.h(cfg, goal)
-
-                    if (fScore[(cfg.pos[0], cfg.pos[1], t)], t, cfg) not in openSet:
-                        heapq.heappush(openSet, (fScore[(cfg.pos[0], cfg.pos[1], t)], t, cfg))
-
-        print("Could not find path")
-        return []
-
-    #Have to fix bug where collision happens in edge.
     def SIPPAStar(self):
         parent = {}
         gScore = {}
@@ -234,10 +175,10 @@ class SSSP():
         parent[(start.pos[0], start.pos[1], 0)] = None
 
         openSet = [(0, 0, start)]
-        heapq.heapify(openSet)
+        heapify(openSet)
         
         while len(openSet) > 0:
-            _, timestep, curr = heapq.heappop(openSet)
+            _, timestep, curr = heappop(openSet)
 
             if curr is goal and timestep not in curr.occupied:
                 
@@ -258,27 +199,25 @@ class SSSP():
 
                     past = c
                     c = parent[c]
-
+ 
                 return ret
 
             successors = self.getSuccessors(curr, timestep)
 
-            for cfg, si, t in successors:
-                
-                #this might need to be timestep or sum or si.index
+            for cfg, si, t in successors:               
                 tempGScore = gScore[(curr.pos[0], curr.pos[1], timestep)] + t - timestep
-                #not plus 1 here, plus however many you had to wait
 
                 if (cfg.pos[0], cfg.pos[1], t) not in gScore:
-                    gScore[(cfg.pos[0], cfg.pos[1], t)] = sys.maxsize
+                    gScore[(cfg.pos[0], cfg.pos[1], t)] = maxsize
+                #else:
+                #    print("Vertex was previously visited")
 
                 if tempGScore < gScore[(cfg.pos[0], cfg.pos[1], t)]:
                     parent[(cfg.pos[0], cfg.pos[1], t)] = (curr.pos[0], curr.pos[1], timestep)
                     gScore[(cfg.pos[0], cfg.pos[1], t)] = tempGScore
                     fScore[(cfg.pos[0], cfg.pos[1], t)] = tempGScore + self.h(cfg, goal)
-
                     if (fScore[(cfg.pos[0], cfg.pos[1], t)], t, cfg) not in openSet:
-                        heapq.heappush(openSet, (fScore[(cfg.pos[0], cfg.pos[1], t)], t, cfg))
+                        heappush(openSet, (fScore[(cfg.pos[0], cfg.pos[1], t)], t, cfg))
 
         print("Could not find path")
         return []
@@ -304,8 +243,6 @@ class SSSP():
                 if t is None:
                     continue
 
-                #get state of configuration cfg with interval i and time t
-
                 s = (m, si, t)              
                 successors.append(s)
 
@@ -315,13 +252,11 @@ class SSSP():
 
         if currSI.end + 1 == targetSI.start and currSI.obsAfter == targetSI.obsBefore:
             return None
-
-        if targetSI.start < timestep:
+        elif targetSI.start < timestep:
             return timestep
         else:
             return targetSI.start   
 
-        return None
 
         
         

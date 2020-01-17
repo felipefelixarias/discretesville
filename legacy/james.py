@@ -136,7 +136,7 @@ class Vertex:
         self.y = y
         self.cost = cost
 
-    def AddNeighbor(vertex):
+    def AddNeighbor(self, vertex):
         self.neighbors.append(vertex)
 
     def __lt__(self, other):
