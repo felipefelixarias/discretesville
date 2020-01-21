@@ -50,8 +50,11 @@ class Cell(QWidget):
         elif self.isDynamicObstacle:
             outer, inner = Qt.gray, Qt.red
         else:
-            inner = QColor(255, 10, 10)
-            inner.setHsvF(0.69, self.vertex.criticality, 1)
+            if self.vertex.criticality >= 0:
+                inner = QColor(255, 10, 10)
+                inner.setHsvF(0.69, self.vertex.criticality, 1)
+            else:
+                inner = Qt.lightGray
             outer, inner = Qt.gray, inner
 
         p.fillRect(r, QBrush(inner))

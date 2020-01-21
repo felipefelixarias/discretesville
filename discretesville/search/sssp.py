@@ -62,6 +62,24 @@ class SSSP():
             
             return ret
 
+    def extractSIPPPath(self, goal, parent):
+        ret = []
+        c = goal
+        past = None
+
+        while c is not None:
+             
+            if past is None:
+                ret.insert(0,(c[0],c[1]))
+            else:
+                for _ in range(past[2]-c[2]):
+                    ret.insert(0, (c[0],c[1]))
+
+            past = c
+            c = parent[c]
+ 
+        return ret
+
     def h(self, start, goal):
         x1, y1 = start.pos
         x2, y2 = goal.pos
@@ -106,7 +124,6 @@ class SSSP():
 
         print("Could not find path")
         return []
-
 
     #Have to fix bug where collision happens in edge.
     def dynamicAStar(self):
@@ -181,26 +198,8 @@ class SSSP():
             _, timestep, curr = heappop(openSet)
 
             if curr is goal and timestep not in curr.occupied:
-                
-                test = []
-                ret = []
-                c = (curr.pos[0], curr.pos[1], timestep)
-                past = None
-
-                while c is not None:
-
-                    test.insert(0, c)
-                    
-                    if past is None:
-                        ret.insert(0,(c[0],c[1]))
-                    else:
-                        for _ in range(past[2]-c[2]):
-                            ret.insert(0, (c[0],c[1]))
-
-                    past = c
-                    c = parent[c]
- 
-                return ret
+                return (curr.pos[0], curr.pos[1], timestep), parent
+                #self.extractSIPPPath((curr.pos[0], curr.pos[1], timestep), parent)
 
             successors = self.getSuccessors(curr, timestep)
 
@@ -220,7 +219,7 @@ class SSSP():
                         heappush(openSet, (fScore[(cfg.pos[0], cfg.pos[1], t)], t, cfg))
 
         print("Could not find path")
-        return []
+        return None, parent
 
     def getSuccessors(self, s, timestep):
         

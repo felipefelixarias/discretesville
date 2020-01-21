@@ -11,6 +11,7 @@ class Vertex:
         self.isStart = False
         self.isGoal = False
         self.criticality = 0
+        self.dynamicCriticality = 0
         si = self.SafeInterval()
         self.safeIntervals.append(si)
 
@@ -70,6 +71,8 @@ class Vertex:
             if timestep >= si.start and timestep <= si.end:
                 return si
 
+
+        print("No valid safe interval at", timestep)
         return None
 
     def getSafeIntervalByIdx(self,idx):
