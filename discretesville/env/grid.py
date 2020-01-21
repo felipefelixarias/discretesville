@@ -30,12 +30,12 @@ class Grid:
 
         return neighbors
 
-    #Get all unvisited vertices that are not static obstacles or have been visited
+    #Get all unvisited vertices that are not static obstacles
     def getAll(self):
         out = []
         for i in range(self.rows):
             for j in range(self.cols):
-                if not self.vertices[i][j].isStaticObstacle and not self.vertices[i][j].visited:
+                if not self.vertices[i][j].isStaticObstacle:
                     out.append(self.vertices[i][j])
         return out
     

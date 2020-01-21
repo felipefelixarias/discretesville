@@ -76,7 +76,10 @@ class MainWindow(QMainWindow):
     def buttonPressed(self):
 
         if self.searchAlg == "critical":
-            for v in self.ville.grid.getAll():
+
+            allVertices = self.ville.grid.getAll()
+
+            for v in allVertices:
                 self.ville.robot.task.start = v
                 goal, parent = self.ville.sssp.dijkstra()
 
@@ -87,7 +90,15 @@ class MainWindow(QMainWindow):
                         tempV.criticality += 1
                         temp = parent[temp]
         
-            self.ville.grid.printCriticality()
+
+            maxCriticality = max([v.criticality for v in allVertices])
+
+            for v in allVertices:
+                v.criticality = v.criticality/maxCriticality
+                w = self.grid.itemAtPosition(v.pos[0], v.pos[1]).widget()
+                w.update()
+
+            #self.ville.grid.printCriticality()
 
         
         elif self.ville.robot.task.start is not None and self.ville.robot.task.goal is not None:
@@ -160,22 +171,6 @@ class MainWindow(QMainWindow):
     
             self.timestep += 1
     
-    def printRelevantSafeIntervals(self):
-        for dynamicObstacle in ville["dynamicObstacles"]:
-            
-            path = dynamicObstacle["path"]
-
-            for _, cell in enumerate(path):
-                
-                v = self.ville.grid.getVertex(cell[0],cell[1])
-
-                print("#"*10)
-                print(v.pos)
-                for si in v.safeIntervals:
-                    print("------")
-                    print(si.start)
-                    print(si.end)
-
     def loadVille(self):
 
         ville = self.villeDic

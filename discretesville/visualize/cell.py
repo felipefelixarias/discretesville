@@ -1,4 +1,4 @@
-from PyQt5.QtGui import QIcon, QImage, QPainter, QPalette, QPixmap, QBrush, QPen
+from PyQt5.QtGui import QIcon, QImage, QPainter, QPalette, QPixmap, QBrush, QPen, QColor
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import QSize, QTimer, pyqtSignal, Qt
 
@@ -50,7 +50,9 @@ class Cell(QWidget):
         elif self.isDynamicObstacle:
             outer, inner = Qt.gray, Qt.red
         else:
-            outer, inner = Qt.gray, Qt.lightGray
+            inner = QColor(255, 10, 10)
+            inner.setHsvF(0.69, self.vertex.criticality, 1)
+            outer, inner = Qt.gray, inner
 
         p.fillRect(r, QBrush(inner))
 
