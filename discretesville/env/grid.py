@@ -41,3 +41,10 @@ class Grid:
     
     def getVertex(self, x, y):
         return self.vertices[x][y]
+
+    def printCriticality(self):
+        for row in self.vertices:
+            t = []
+            for v in row:
+                t.append(v.criticality)
+            print(t)

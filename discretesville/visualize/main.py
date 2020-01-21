@@ -29,8 +29,14 @@ if __name__ == '__main__':
         with open(args.ville, 'r') as f:
             villeDic = load(f)
         window = MainWindow(villeDic=villeDic, searchAlg=args.alg)
+
+    if args.mode == "research":
+        with open(args.ville, 'r') as f:
+            villeDic = load(f)
+        window = MainWindow(villeDic=villeDic, searchAlg=args.alg)
     
     if args.mode == "save":
         pass
+
   
     app.exec_()

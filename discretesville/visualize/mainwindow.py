@@ -74,14 +74,35 @@ class MainWindow(QMainWindow):
                 w.reset()
             
     def buttonPressed(self):
-        if self.ville.robot.task.start is not None and self.ville.robot.task.goal is not None:
+
+        if self.searchAlg == "critical":
+            for v in self.ville.grid.getAll():
+                self.ville.robot.task.start = v
+                goal, parent = self.ville.sssp.dijkstra()
+
+                for key in parent:
+                    temp = key
+                    while temp is not None:
+                        tempV = self.ville.grid.getVertex(temp[0], temp[1])
+                        tempV.criticality += 1
+                        temp = parent[temp]
+        
+            self.ville.grid.printCriticality()
+
+        
+        elif self.ville.robot.task.start is not None and self.ville.robot.task.goal is not None:
 
             if self.searchAlg == "SIPPA*":
                 self.path = self.ville.sssp.SIPPAStar()
             elif self.searchAlg == "dynamicA*":
                 self.path = self.ville.sssp.dynamicAStar()
             elif self.searchAlg == "dijkstra":
-                self.path = self.ville.sssp.dijkstra()
+                goal, parent = self.ville.sssp.dijkstra()
+                if goal is None:
+                    self.path = []
+                else:
+                    self.path = self.ville.sssp.extractPath(goal, parent)
+
             elif self.searchAlg == "A*":
                 self.path = self.ville.sssp.aStar()
             else:
