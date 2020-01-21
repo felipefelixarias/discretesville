@@ -16,6 +16,7 @@ class Vertex:
         self.occupiedBy = []
         self.isStart = False
         self.isGoal = False
+        self.criticality = 0
         si = self.SafeInterval()
         self.safeIntervals.append(si)
 

@@ -48,9 +48,9 @@ class SSSP():
 
         if goal.pos not in parent:
             print("Could not find path")
-            return []
+            return None, parent
         else:
-            return self.extractPath(goal.pos, parent)
+            return goal.pos, parent
 
     def extractPath(self, goal, parent):
             ret = []
