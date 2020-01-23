@@ -21,9 +21,9 @@ optional arguments:
   --cols Number of Columns
                         Number of Columns for grid
 
-Current modes implemented are: UX, load, and research
-Search algorithms supported are: dynamicA*, SIPPA*, A*, dijkstra, and critical
-Villes are saved as JSONs in the visualize/villes folder
+Current modes implemented are: UX, load, and research.
+Search algorithms supported are: dynamicA*, SIPPA*, A*, dijkstra, and critical.
+Villes are saved as JSONs in the visualize/villes folder.
 Rows and cols are used to determine size of the grid in UX mode.
 
 In UX mode, first use left clicks to set static obstacles. Once done, use right clicks to define the start and end locations of the robot. Then, set dynamic obstacles by starting them with a right click and using left clicks to specify the full path. Every right click results in a new dynamic obstacle.

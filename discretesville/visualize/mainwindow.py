@@ -135,10 +135,12 @@ class MainWindow(QMainWindow):
                         tempV = self.ville.grid.getVertex(c[0], c[1])
 
                         if past is None:
-                            tempV.dynamicCriticality += 1
+                            tempV.dynamicCriticality += 0
                         else:
-                            for _ in range(past[2]-c[2]):
-                                tempV.dynamicCriticality += 1
+                            #Added this if statement to only count waiting in place
+                            if (past[2]-c[2]) > 1:
+                                for _ in range(past[2]-c[2]):
+                                    tempV.dynamicCriticality += 1
 
                         past = c
                         c = sipParent[c]
@@ -171,6 +173,7 @@ class MainWindow(QMainWindow):
             for v in allVertices:
                 x = v.dynamicCriticality - v.criticality
                 #v.criticality = (x - minDiff)/(maxDiff - minDiff)
+                #v.criticality = v.criticality
                 v.criticality = v.dynamicCriticality
                 w = self.grid.itemAtPosition(v.pos[0], v.pos[1]).widget()
                 w.update()
