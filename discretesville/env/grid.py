@@ -46,5 +46,5 @@ class Grid:
         for row in self.vertices:
             t = []
             for v in row:
-                t.append(v.criticality)
+                t.append(v.dynamicCriticality)
             print(t)

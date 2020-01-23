@@ -84,8 +84,10 @@ class MainWindow(QMainWindow):
                 goal, parent = self.ville.sssp.dijkstra()
 
                 for key in parent:
+                    path = []
                     temp = key
                     while temp is not None:
+                        path.append(temp)
                         tempV = self.ville.grid.getVertex(temp[0], temp[1])
                         tempV.criticality += 1
                         temp = parent[temp]
@@ -93,18 +95,103 @@ class MainWindow(QMainWindow):
 
             maxCriticality = max([v.criticality for v in allVertices])
 
+            for vStart in allVertices:
+                self.ville.robot.task.start = vStart
+                #maybe here will be nested for v in all vertices
+                for vGoal in allVertices:
+                    if vGoal == vStart:
+                        continue 
+                    self.ville.robot.task.goal = vGoal
+
+                    goal, parent = self.ville.sssp.dijkstra()
+                    path = self.ville.sssp.extractPath(goal, parent)
+                    path.reverse() 
+
+                    for i, cell in enumerate(path):
+                    
+                        v = self.ville.grid.getVertex(cell[0],cell[1])
+
+                        if i == 0:
+                            obs = DynamicObstacle()
+                            obs.path.append(v)
+                            self.ville.dynamicObstacles.append(obs)
+                            v.setAsOccupied(len(obs.path)-1, obs)
+                        else:
+                            obs = self.ville.dynamicObstacles[-1]
+                            obs.path.append(v)
+                            v.setAsOccupied(len(obs.path)-1, obs)
+
+                    sipGoal, sipParent = self.ville.sssp.SIPPAStar()
+
+                    if sipGoal is None:
+                        print("###########")
+                        print(vStart.pos)
+                        print(vGoal.pos)
+
+                    c = sipGoal
+                    past = None
+
+                    while c is not None:
+                        tempV = self.ville.grid.getVertex(c[0], c[1])
+
+                        if past is None:
+                            tempV.dynamicCriticality += 0
+                        else:
+                            #Added this if statement to only count waiting in place
+                            if (past[2]-c[2]) > 1:
+                                for _ in range(past[2]-c[2]):
+                                    tempV.dynamicCriticality += 1
+
+                        past = c
+                        c = sipParent[c]
+
+                    #RESET
+
+                    for i, cell in enumerate(path):
+                    
+                        v = self.ville.grid.getVertex(cell[0],cell[1])
+                        v.safeIntervals.clear()
+                        v.occupied.clear()
+                        v.occupiedBy.clear()
+                        v.setAsNoObstacle()
+
+                    self.ville.dynamicObstacles.clear()
+                    
+                    
+            maxDynamicCriticality = max([v.dynamicCriticality for v in allVertices])
+
             for v in allVertices:
                 v.criticality = v.criticality/maxCriticality
+                v.dynamicCriticality = v.dynamicCriticality/maxDynamicCriticality
+                # w = self.grid.itemAtPosition(v.pos[0], v.pos[1]).widget()
+                # w.update()
+
+            criticalityDiff = [v.dynamicCriticality - v.criticality for v in allVertices]
+            maxDiff = max(criticalityDiff)
+            minDiff = min(criticalityDiff)
+
+            for v in allVertices:
+                x = v.dynamicCriticality - v.criticality
+                #v.criticality = (x - minDiff)/(maxDiff - minDiff)
+                #v.criticality = v.criticality
+                v.criticality = v.dynamicCriticality
                 w = self.grid.itemAtPosition(v.pos[0], v.pos[1]).widget()
                 w.update()
 
-            #self.ville.grid.printCriticality()
+            self.ville.grid.printCriticality()
+
+            
 
         
         elif self.ville.robot.task.start is not None and self.ville.robot.task.goal is not None:
 
             if self.searchAlg == "SIPPA*":
-                self.path = self.ville.sssp.SIPPAStar()
+                goal, parent = self.ville.sssp.SIPPAStar()
+                if goal is None:
+                    self.path = []
+                else:
+                    self.path = self.ville.sssp.extractSIPPPath(goal, parent)
+
             elif self.searchAlg == "dynamicA*":
                 self.path = self.ville.sssp.dynamicAStar()
             elif self.searchAlg == "dijkstra":
@@ -185,7 +272,7 @@ class MainWindow(QMainWindow):
         goalCell.setStartGoal()
 
         for dynamicObstacle in ville["dynamicObstacles"]:
-            
+            print("Setting dynamic obstacle..")
             path = dynamicObstacle["path"]
 
             for i, cell in enumerate(path):
