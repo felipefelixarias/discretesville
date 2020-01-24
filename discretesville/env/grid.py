@@ -38,6 +38,14 @@ class Grid:
                 if not self.vertices[i][j].isStaticObstacle:
                     out.append(self.vertices[i][j])
         return out
+
+    def getAllStaticObs(self):
+        out = []
+        for i in range(self.rows):
+            for j in range(self.cols):
+                if self.vertices[i][j].isStaticObstacle:
+                    out.append(self.vertices[i][j])
+        return out
     
     def getVertex(self, x, y):
         return self.vertices[x][y]
