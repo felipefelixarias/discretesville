@@ -6,9 +6,7 @@ class SSSP():
         self.grid = grid
         self.robot = robot
 
-    #TODO Dijkstra should be able to return either a path or parent and score
-    # maybe it should return parent and score by default and the extra step is
-    # taken in main?
+
 
     def dijkstra(self):
         parent = {}
@@ -84,7 +82,6 @@ class SSSP():
         x1, y1 = start.pos
         x2, y2 = goal.pos
         return abs(x2-x1) + abs(y2-y1)   
-
 
     def aStar(self):
         parent = {}

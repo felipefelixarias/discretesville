@@ -24,7 +24,8 @@ class Cell(QWidget):
         self.ville = ville
         self.vertex = self.ville.grid.vertices[x][y]
         self.inPath = False
-        
+
+    #TODO Get rid of reset, update and parameters should be intialized elsewhere.    
     def reset(self):
         self.vertex.isGoal = False
         self.vertex.isStart = False
