@@ -1,6 +1,7 @@
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QPushButton, QVBoxLayout, QGridLayout
 from PyQt5.QtCore import QSize, QTimer
+from json import dump
 
 from ville.discretesville import Discretesville
 from obstacles.dynamic import DynamicObstacle
@@ -9,11 +10,13 @@ from visualize.cell import Cell
 img = "../images/logo.png"
 
 class MainWindow(QMainWindow):
-    def __init__(self, villeDic=None, numRows=0, numCols=0, searchAlg="SIPPAStar", *args, **kwargs):
+    def __init__(self, villeDic=None, numRows=0, numCols=0, mode="UX", searchAlg="SIPPA*", filename="test", *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
 
         self.villeDic = villeDic
         self.searchAlg = searchAlg
+        self.mode = mode
+        self.filename = filename
 
         if self.villeDic is not None:
             self.numRows, self.numCols = self.villeDic["numRows"], self.villeDic["numCols"]
@@ -75,7 +78,7 @@ class MainWindow(QMainWindow):
             
     def buttonPressed(self):
 
-        if self.searchAlg == "critical":
+        if self.mode == "research":
 
             allVertices = self.ville.grid.getAll()
 
@@ -100,6 +103,17 @@ class MainWindow(QMainWindow):
 
             #self.ville.grid.printCriticality()
 
+        elif self.mode == "save":
+            #TODO: Check if user has given robot a start and goal
+
+            ville = {"numRows" : self.ville.grid.rows,
+                    "numCols" : self.ville.grid.cols,
+                    "robot" : {"start":list(self.ville.robot.task.start.pos), "goal":list(self.ville.robot.task.goal.pos)},
+                    "staticObstacles" : [list(o.pos) for o in self.ville.grid.getAllStaticObs()],
+                    "dynamicObstacles" : [[list(v.pos) for v in obs.path] for obs in self.ville.dynamicObstacles]}
+
+            with open(self.filename, 'w') as fp:
+                dump(ville, fp)
         
         elif self.ville.robot.task.start is not None and self.ville.robot.task.goal is not None:
 
@@ -128,6 +142,7 @@ class MainWindow(QMainWindow):
             self.ville.robot.task.goal = None
             
         else:
+            #TODO either delete this, or enable reset
             self.ville.robot.task.start = None
             self.ville.robot.task.goal = None
             self.ville.dynamicObstacles = []
