@@ -80,6 +80,8 @@ class MainWindow(QMainWindow):
 
         if self.mode == "research":
 
+            waitOnly = True
+
             allVertices = self.ville.grid.getAll()
 
             for v in allVertices:
@@ -100,7 +102,6 @@ class MainWindow(QMainWindow):
 
             for vStart in allVertices:
                 self.ville.robot.task.start = vStart
-                #maybe here will be nested for v in all vertices
                 for vGoal in allVertices:
                     if vGoal == vStart:
                         continue 
@@ -138,12 +139,17 @@ class MainWindow(QMainWindow):
                         tempV = self.ville.grid.getVertex(c[0], c[1])
 
                         if past is None:
-                            tempV.dynamicCriticality += 0
+                            if not waitOnly:
+                                tempV.dynamicCriticality += 1
                         else:
                             #Added this if statement to only count waiting in place
-                            if (past[2]-c[2]) > 1:
+                            if waitOnly:
+                                if (past[2]-c[2]) > 1:
+                                    for _ in range(past[2]-c[2]):
+                                        tempV.dynamicCriticality += 1
+                            else:
                                 for _ in range(past[2]-c[2]):
-                                    tempV.dynamicCriticality += 1
+                                        tempV.dynamicCriticality += 1
 
                         past = c
                         c = sipParent[c]

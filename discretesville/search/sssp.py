@@ -2,6 +2,24 @@ from heapq import heapify, heappop, heappush
 from sys import maxsize
 
 class SSSP():
+    """
+    Class in charge of all single source shortest path algorithms
+    
+    Parameters
+    ----------
+    grid
+        A grid object containing the graph.
+    robot
+        A robot object with a moving task from a start to an end vertex.
+
+    Attributes
+    ----------
+    grid
+        A grid object containing the graph.
+    robot
+        A robot object with a moving task from a start to an end vertex.
+
+    """
     def __init__(self, grid, robot):
         self.grid = grid
         self.robot = robot
@@ -9,10 +27,20 @@ class SSSP():
 
 
     def dijkstra(self):
+        """ Dijkstra Single Source Shortest Path algorithm, computes shortest path to each node in graph.
+        Returns
+        ----------
+        goal.pos
+            Key to the goal vertex
+        parent
+            Dictionary storing each node's parent.
+        """
         parent = {}
         score = {}
         #TODO change this visited from a dic to a set (faster?)
         visited = {}
+        #TODO Raise a ValueError if start or goal are None
+
         start = self.robot.task.start
         goal = self.robot.task.goal
 
@@ -51,6 +79,22 @@ class SSSP():
             return goal.pos, parent
 
     def extractPath(self, goal, parent):
+        """
+        Extracts path from the Dictionary storing each node's parent.
+        
+        Parameters
+        ----------
+        goal
+            Key of the goal vertex in the parent dictionary.
+        parent
+            Dictionary storing each parent's node.
+
+        Returns
+        ----------
+        ret
+            List of path taken to get to goal from start, whose parent is None.
+
+        """
             ret = []
             temp = goal
 
@@ -61,6 +105,22 @@ class SSSP():
             return ret
 
     def extractSIPPPath(self, goal, parent):
+        """
+        Extracts path from the Dictionary storing each node's parent. Stores additional nodes for waiting in place for SIPP.
+        
+        Parameters
+        ----------
+        goal
+            Key of the goal vertex in the parent dictionary.
+        parent
+            Dictionary storing each parent's node.
+
+        Returns
+        ----------
+        ret
+            List of path taken to get to goal from start, whose parent is None.
+
+        """
         ret = []
         c = goal
         past = None
@@ -79,11 +139,37 @@ class SSSP():
         return ret
 
     def h(self, start, goal):
+        """
+        Manhattan distance, used a heuristic for A*.
+        
+        Parameters
+        ----------
+        start
+            Vertex object number one.
+        goal 
+            Vertex object number two.
+
+        Returns
+        ----------
+        int
+            The Manhattan distance between the two vertices.
+        """
+
         x1, y1 = start.pos
         x2, y2 = goal.pos
-        return abs(x2-x1) + abs(y2-y1)   
+        m = abs(x2-x1) + abs(y2-y1)  
+        return m   
 
     def aStar(self):
+        """ 
+        A* algorithm, computes shortest path from one vertex to another.
+        Returns
+        ----------
+        goal.pos
+            Key to the goal vertex
+        parent
+            Dictionary storing each node's parent.
+        """
         parent = {}
         gScore = {}
         fScore = {}
@@ -124,6 +210,13 @@ class SSSP():
 
     #Have to fix bug where collision happens in edge.
     def dynamicAStar(self):
+        """ 
+        A* algorithm, computes shortest path from one vertex to another.
+        Returns
+        ----------
+        [(int,int)]
+            List of indices/ids of all vertices in path.
+        """
         parent = {}
         gScore = {}
         fScore = {}
@@ -177,6 +270,15 @@ class SSSP():
         return []
 
     def SIPPAStar(self):
+        """ 
+        Safe Interval Path Planning A* algorithm, computes shortest path from one vertex to another using safe intervals.
+        Returns
+        ----------
+        goal.pos, timestep
+            Key to the goal vertex.
+        parent
+            Dictionary storing each node's parent.
+        """
         parent = {}
         gScore = {}
         fScore = {}
@@ -219,6 +321,21 @@ class SSSP():
         return None, parent
 
     def getSuccessors(self, s, timestep):
+        """ 
+        Function for SIPP A* as implemented in the publication.
+        
+        Parameters
+        ----------
+        s
+            The vertex for which you want successors.
+        timestep
+            The timestep for which to check for successors.
+
+        Returns
+        ----------
+        Successors
+            List of vertex, safe interval, timestep successors.
+        """
         
         successors = []
         ms = self.grid.getNeighbors(s)
@@ -238,13 +355,30 @@ class SSSP():
                 
                 if t is None:
                     continue
-
+            
+                #TODO No longer return safe interval
                 s = (m, si, t)              
                 successors.append(s)
 
         return successors
 
     def getEarliestArrivalTime(self, currSI, targetSI, timestep):
+        """ 
+        Function to determine the earliest arrival time to go from one safe interval to another
+
+        Parameters
+        ----------
+        currSI
+            Safe interval object to begin from.
+        targetSI
+            Target safe interval object.
+        timestep
+            The current timestep.
+        Returns
+        ----------
+        int
+            None if you cannot transition between safe intervals or the earliest arrival time.
+        """
 
         if currSI.end + 1 == targetSI.start and currSI.obsAfter == targetSI.obsBefore:
             return None
