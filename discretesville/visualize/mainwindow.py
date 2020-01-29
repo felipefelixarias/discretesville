@@ -10,7 +10,7 @@ from visualize.cell import Cell
 img = "../images/logo.png"
 
 class MainWindow(QMainWindow):
-    def __init__(self, villeDic=None, numRows=0, numCols=0, mode="UX", searchAlg="SIPPA*", filename="test", *args, **kwargs):
+    def __init__(self, villeDic=None, numRows=0, numCols=0, mode="UX", searchAlg="dynamicA*", filename="test", *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
 
         self.villeDic = villeDic
@@ -224,8 +224,9 @@ class MainWindow(QMainWindow):
             elif self.searchAlg == "A*":
                 self.path = self.ville.sssp.aStar()
             else:
-                print("Invalid search algorithm, using SIPP A*")
-                self.path = self.ville.sssp.SIPPAStar()
+                print(self.searchAlg)
+                print("Invalid search algorithm, using dynamic A*")
+                self.path = self.ville.sssp.dynamicAStar()
 
             timer = QTimer(self)
             timer.timeout.connect(self.updateCell)

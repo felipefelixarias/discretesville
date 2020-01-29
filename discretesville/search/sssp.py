@@ -95,14 +95,14 @@ class SSSP():
             List of path taken to get to goal from start, whose parent is None.
 
         """
-            ret = []
-            temp = goal
+        ret = []
+        temp = goal
 
-            while temp is not None:
-                ret.insert(0, (temp[0], temp[1]))
-                temp = parent[temp]
-            
-            return ret
+        while temp is not None:
+            ret.insert(0, (temp[0], temp[1]))
+            temp = parent[temp]
+        
+        return ret
 
     def extractSIPPPath(self, goal, parent):
         """
