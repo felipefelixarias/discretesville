@@ -10,13 +10,13 @@ import time
 
 
 DIMS = [
-    (15,17),
-    (4,4)
+    (9,9)
 ]
 
 img = "../images/logo.png"
 pacman = "../images/Pacman.png"
 x = "../images/x.png"
+ghost = "../images/ghost.png"
 qImg = QImage(img)
 
 class Pos(QWidget):
@@ -43,6 +43,10 @@ class Pos(QWidget):
         self.vertex.isGoal = False
         self.vertex.isStart = False
         self.vertex.isStaticObstacle = False
+        self.inPath = False
+        self.isDynamicObstacle = False
+        self.vertex.occupied = []
+        self.vertex.occupiedBy = []
         self.update()
 
     def paintEvent(self, event):
@@ -57,6 +61,8 @@ class Pos(QWidget):
             outer, inner = color, color
         elif self.inPath:
             outer, inner = Qt.gray, Qt.blue
+        elif self.isDynamicObstacle:
+            outer, inner = Qt.gray, Qt.red
         else:
             outer, inner = Qt.gray, Qt.lightGray
 
@@ -67,14 +73,24 @@ class Pos(QWidget):
         p.setPen(pen)
         p.drawRect(r)
 
+        if self.inPath:
+            p.drawPixmap(r, QPixmap(pacman))
+
+        if self.isDynamicObstacle:
+            p.drawPixmap(r, QPixmap(ghost))
+
         if self.vertex.isStart:
             p.drawPixmap(r, QPixmap(pacman))
-        elif self.vertex.isGoal:
+            self.vertex.isStart = False
+        if self.vertex.isGoal:
             p.drawPixmap(r, QPixmap(x))
 
 
     def setStaticObstacle(self):
-        self.vertex.isStaticObstacle = not self.vertex.isStaticObstacle
+        if self.vertex.isStaticObstacle:
+            self.vertex.setAsNoObstacle()
+        else:
+            self.vertex.setAsStaticObstacle()
         self.update() 
 
     def setStartGoal(self):
@@ -89,8 +105,6 @@ class Pos(QWidget):
 
     def mouseReleaseEvent(self, e):
 
-        # if (e.button() == Qt.RightButton and not self.isStaticObstacle):
-        #     self.setStaticObstcale()
         if (e.button() == Qt.RightButton):
             if self.ville.robot.task.start is None or self.ville.robot.task.goal is None:
                 self.setStartGoal()
@@ -98,7 +112,7 @@ class Pos(QWidget):
                 obs = DynamicObstacle()
                 obs.path.append(self.vertex)
                 self.ville.dynamicObstacles.append(obs)
-
+                self.vertex.setAsOccupied(len(obs.path)-1, obs)
 
         if (e.button() == Qt.LeftButton):
             if self.ville.robot.task.start is None and self.ville.robot.task.goal is None:
@@ -106,14 +120,12 @@ class Pos(QWidget):
             else:
                 obs = self.ville.dynamicObstacles[-1]
                 obs.path.append(self.vertex)
-
+                self.vertex.setAsOccupied(len(obs.path)-1, obs)
 
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-
         self.numRows, self.numCols = DIMS[0]
-
         self.ville = Discretesville(self.numRows, self.numCols)
         
         w = QWidget()
@@ -124,11 +136,9 @@ class MainWindow(QMainWindow):
         self.button.setIconSize(QSize(32, 32))
         self.button.setIcon(QIcon(img))
         self.button.setFlat(True)
-
         self.button.pressed.connect(self.buttonPressed)
 
         hb.addWidget(self.button)
-
         vb = QVBoxLayout()
         vb.addLayout(hb)
 
@@ -144,6 +154,8 @@ class MainWindow(QMainWindow):
         self.reset_map()
 
         self.show()
+        self.path = []
+        self.timestep = 0
 
     def init_map(self):
         # Add positions to the map
@@ -151,6 +163,7 @@ class MainWindow(QMainWindow):
             for y in range(0, self.numCols):
                 w = Pos(x, y, self.ville)
                 self.grid.addWidget(w, x, y)
+                w.update()
                 # Connect signal to handle expansion.
                 #w.clicked.connect(self.trigger_start)
                 #w.expandable.connect(self.expand_reveal)
@@ -166,14 +179,63 @@ class MainWindow(QMainWindow):
     def buttonPressed(self):
         if self.ville.robot.task.start is not None and self.ville.robot.task.goal is not None:
 
-            path = self.ville.sssp.dijkstra()
-            for i,j in path:
-                w = self.grid.itemAtPosition(i,j).widget()
-                w.inPath = True
-            self.update()
+            self.path = self.ville.sssp.SIPPAStar()
+
             for obs in self.ville.dynamicObstacles:
                 print([o.pos for o in obs.path])
 
+            timer = QTimer(self)
+            timer.timeout.connect(self.updateCell)
+            timer.start(500)
+
+            self.ville.robot.task.start = None
+            self.ville.robot.task.goal = None
+            
+        else:
+            self.ville.robot.task.start = None
+            self.ville.robot.task.goal = None
+            self.ville.dynamicObstacles = []
+            self.path = []
+            self.reset_map()
+
+    def updateCell(self):
+
+        if (len(self.path) > self.timestep):
+
+            if self.timestep > 0:
+                i,j = self.path[self.timestep-1]
+                w = self.grid.itemAtPosition(i,j).widget()
+                w.inPath = False
+                w.update()
+
+                obstaclesPast = [obs.path[self.timestep-1] for obs in self.ville.dynamicObstacles if len(obs.path) > self.timestep -1]
+
+                for o in obstaclesPast:
+                    i, j = o.pos
+                    w = self.grid.itemAtPosition(i,j).widget()
+                    w.isDynamicObstacle = False
+                    w.update()
+
+            obstacles = [obs.path[self.timestep] for obs in self.ville.dynamicObstacles if len(obs.path) > self.timestep]
+
+            #i,j = self.path.pop(0)
+            for o in obstacles:
+                i, j = o.pos
+                w = self.grid.itemAtPosition(i,j).widget()
+                w.isDynamicObstacle = True
+                w.update()
+
+            #print(self.path[self.timestep])
+            
+            i,j = self.path[self.timestep]
+            w = self.grid.itemAtPosition(i,j).widget()
+            w.inPath = True
+            w.update()         
+    
+            self.timestep += 1
+
+
+        
 if __name__ == '__main__':
     app = QApplication([])
     window = MainWindow()
