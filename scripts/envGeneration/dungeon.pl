@@ -15,6 +15,7 @@
 
 use strict;
 use lib '/usr/local/lib/perl5';
+use JSON;
 use GD;
   GD::Image->trueColor(1);
 
@@ -65,7 +66,7 @@ my $LABEL       = 0xFF000000;
 my $OPENSPACE   = $ROOM | $CORRIDOR;
 my $DOORSPACE   = $ARCH;
 my $ESPACE      = $ENTRANCE | $DOORSPACE | 0xFF000000;
-my $STAIRS      = $NOTHING;
+my $STAIRS      = $STAIR_DN | $STAIR_UP;
 
 my $BLOCK_ROOM  = $BLOCKED | $ROOM;
 my $BLOCK_CORR  = $BLOCKED | $PERIMETER | $CORRIDOR;
@@ -155,24 +156,65 @@ my $color_chain = {
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # showtime
 
-my $opts = &get_opts();
-my $dungeon = &create_dungeon($opts);
-   &image_dungeon($dungeon);
+
+my $x; for ($x = 0; $x < 1000; $x++) {
+  my $opts = &get_opts($x);
+  my $dungeon = &create_dungeon($opts);
+  &json_dungeon($dungeon);
+  &image_dungeon($dungeon);
+}
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+# write json
+sub json_dungeon {
+  my ($dungeon) = @_;
+
+  my $cell = $dungeon->{'cell'};
+  my $json;
+  {
+    local $/; #Enable 'slurp' mode
+    open my $fh, "<", "empty.json";
+    $json = <$fh>;
+    close $fh;
+  }
+  my $data = decode_json($json);
+
+  $data->{'numRows'} = $dungeon->{'n_rows'}-1;
+  $data->{'numCols'} = $dungeon->{'n_cols'}-1;
+
+  my $r; for ($r = 1; $r < $dungeon->{'n_rows'}; $r++) {
+    my $c; for ($c = 1; $c < $dungeon->{'n_cols'}; $c++) {
+      next if ($cell->[$r][$c] & $OPENSPACE);
+      my @coords = ($r-1,$c-1);
+      push @{ $data->{'staticObstacles'} }, [@coords];
+    }
+  }
+
+  open my $fh, ">", "jsons/$dungeon->{'seed'}.json";
+  print $fh encode_json($data);
+  close $fh;
+
+  return ">jsons/$dungeon->{'seed'}.json";
+}
+
+
 # get dungeon options
 
 sub get_opts {
+
+  my ($x) = @_;
   my $opts = {
-    'seed'              => time(),
-    'n_rows'            => 100,          # must be an odd number
-    'n_cols'            => 100,          # must be an odd number
+    'seed'              => $x,
+    'n_rows'            => 101,          # must be an odd number
+    'n_cols'            => 101,          # must be an odd number
     'dungeon_layout'    => 'None',
-    'room_min'          => 3,           # minimum room size
-    'room_max'          => 10,           # maximum room size
+    'room_min'          => 1,           # minimum room size
+    'room_max'          => 11,           # maximum room size
     'room_layout'       => 'Scattered', # Packed, Scattered
     'corridor_layout'   => 'Bent',
-    'remove_deadends'   => 90,          # percentage
+    'remove_deadends'   => 50,          # percentage
     'add_stairs'        => 0,           # number of stairs
     'map_style'         => 'Standard',
     'cell_size'         => 18,          # pixels
@@ -1018,40 +1060,6 @@ sub empty_blocks {
 sub image_dungeon {
   my ($dungeon) = @_;
   my $image = &scale_dungeon($dungeon);
-  my $cell = $dungeon->{'cell'};
-
-  my $r; for ($r = 0; $r <= $dungeon->{'n_rows'}; $r++) {
-    my $c; for ($c = 0; $c <= $dungeon->{'n_cols'}; $c++) {
-      if ($cell->[$r][$c] != $0){
-        $cell->[$r][$c] = 1
-      }
-    }
-  }
-
-  use Data::Dump qw(dump);
-  dump($cell);
-
-
-  # # Open a file named "output.txt"; die if there's an error
-  # open my $fh, '>', "output.txt" or die "Cannot open output.txt: $!";
-
-  # # Loop over the array
-  # foreach ($cell)
-  # {
-  #     print $fh "$_\n"; # Print each entry in our array to the file
-  # }
-
-
-  # my $r; for ($r = 0; $r <= $dungeon->{'n_rows'}; $r++) {
-  #   my $c; for ($c = 0; $c <= $dungeon->{'n_cols'}; $c++) {
-  #     if ($cell->[$r][$c] & $BLOCKED){
-  #       print $fh $r;
-  #     }
-  #   }
-  # }
-
-  # close $fh; # Not necessary, but nice to do
-
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # new image
@@ -1075,15 +1083,12 @@ sub image_dungeon {
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # write image
 
-  open(OUTPUT,">$dungeon->{'seed'}.gif") and do {
+  open(OUTPUT,">images/$dungeon->{'seed'}.gif") and do {
     print OUTPUT $ih->gif();
     close(OUTPUT);
   };
-
-
-  return "$dungeon->{'seed'}.gif";
+  return ">images/$dungeon->{'seed'}.gif";
 }
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # scale dungeon
 

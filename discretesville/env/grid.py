@@ -1,4 +1,5 @@
 from env.vertex import Vertex
+import numpy as np
 
 class Grid:
     """ Data structure that stores all of the vertices in a multi-dimensional list.
@@ -88,3 +89,12 @@ class Grid:
             for v in row:
                 t.append(v.dynamicCriticality)
             print(t)
+
+    def getBinaryArray(self):
+        output = np.ones((self.rows, self.cols))
+        for i in range(self.rows):
+            for j in range(self.cols):
+                if not self.vertices[i][j].isStaticObstacle:
+                    output[i][j]=0
+        return output
+

@@ -1,0 +1,10 @@
+{
+    "numRows":101,
+    "numCols":101,
+    "robot":{
+        "start":[0,0],
+        "goal":[1,0]
+    },
+    "staticObstacles":[],
+    "dynamicObstacles":[]
+}
