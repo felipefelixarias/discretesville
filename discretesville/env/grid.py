@@ -1,5 +1,6 @@
 from env.vertex import Vertex
 import numpy as np
+from random import sample
 
 class Grid:
     """ Data structure that stores all of the vertices in a multi-dimensional list.
@@ -71,6 +72,11 @@ class Grid:
 
                     nonObstacles.append(self.vertices[i][j])
         return nonObstacles
+
+    def sampleVertices(self, ratio):
+        allVertices = self.getAll()
+        return sample(allVertices, int(ratio*len(allVertices)))
+
 
     def getAllStaticObs(self):
         out = []

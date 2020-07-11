@@ -47,6 +47,7 @@ class Vertex:
         self.dynamicCriticality = 0
         si = self.SafeInterval()
         self.safeIntervals.append(si)
+        self.touched = False
 
     class SafeInterval:
         """

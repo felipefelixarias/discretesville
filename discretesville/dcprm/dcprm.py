@@ -1,154 +1,135 @@
-from json import dump
+from json import dump, load
 from ville.discretesville import Discretesville
 from obstacles.dynamic import DynamicObstacle
 from visualize.cell import Cell
 import numpy as np
+from itertools import combinations
+import time
 
 
 
 class DCPRM():
 
-    def __init__(self, villeDic=None, numRows=0, numCols=0, mode="research", searchAlg="dynamicA*", filename="test", *args, **kwargs):
+    def __init__(self, filename, *args, **kwargs):
 
-        self.villeDic = villeDic
-        self.searchAlg = searchAlg
-        self.mode = mode
         self.filename = filename
 
-        if self.villeDic is not None:
-            self.numRows, self.numCols = self.villeDic["numRows"], self.villeDic["numCols"]
-        else:
-            self.numRows, self.numCols = numRows,numCols
+        directory_in_str = '../scripts/envGeneration/jsons/'
 
+        with open(directory_in_str+self.filename, 'r') as f:
+             self.villeDic = load(f)
+
+        self.numRows, self.numCols = self.villeDic["numRows"], self.villeDic["numCols"]
         self.ville = Discretesville(self.numRows, self.numCols)
+        self.loadVille()
 
-        if self.villeDic is not None:
-            print("loaded dictionary")
-            self.loadVille()
+        #print("loaded dictionary")
+        #print("computing dc")
+        self.computeDC()
+        time.sleep(2)
+        #print("dc computed")
+        self.getOccupancyGrids(11)
+        time.sleep(2)
 
-        self.buttonPressed()
 
-    def buttonPressed(self):
+    def computeDC(self):
 
-        if self.mode == "research":
+        allVertices = self.ville.grid.sampleVertices(0.2)
 
-            waitOnly = True
+        #print("There are " +str(len(allVertices))+" vertices")
 
-            allVertices = self.ville.grid.getAll()
+        sssps = list(combinations(allVertices, 2))
+        #print("Solving " + str(len(sssps)) + " shortest paths")
 
-            # Regular Criticality
-            # for v in allVertices:
-            #     self.ville.robot.task.start = v
-            #     goal, parent = self.ville.sssp.dijkstra()
+        for vStart, vGoal in sssps:
+            # if iterNumber%500 ==0:
+            #     print(iterNumber)
 
-            #     for key in parent:
-            #         path = []
-            #         temp = key
-            #         while temp is not None:
-            #             path.append(temp)
-            #             tempV = self.ville.grid.getVertex(temp[0], temp[1])
-            #             tempV.criticality += 1
-            #             temp = parent[temp]
-        
+            self.ville.robot.task.start = vStart
+            self.ville.robot.task.goal = vGoal
 
-            #maxCriticality = max([v.criticality for v in allVertices])
+            goal, parent = self.ville.sssp.aStar()
+            path = self.ville.sssp.extractPath(goal, parent)
+            path.reverse() 
 
-            for vStart in allVertices:
-                self.ville.robot.task.start = vStart
-                for vGoal in allVertices:
-                    if vGoal == vStart:
-                        continue 
-                    self.ville.robot.task.goal = vGoal
+            #print("placing dynamic obstacle")
+            for i, cell in enumerate(path):
+            
+                v = self.ville.grid.getVertex(cell[0],cell[1])
 
-                    goal, parent = self.ville.sssp.dijkstra()
-                    path = self.ville.sssp.extractPath(goal, parent)
-                    path.reverse() 
+                if i == 0:
+                    obs = DynamicObstacle()
+                    obs.path.append(v)
+                    self.ville.dynamicObstacles.append(obs)
+                    v.setAsOccupied(len(obs.path)-1, obs)
+                else:
+                    obs = self.ville.dynamicObstacles[-1]
+                    obs.path.append(v)
+                    v.setAsOccupied(len(obs.path)-1, obs)
 
-                    for i, cell in enumerate(path):
-                    
-                        v = self.ville.grid.getVertex(cell[0],cell[1])
+            time.sleep(0.03)
 
-                        if i == 0:
-                            obs = DynamicObstacle()
-                            obs.path.append(v)
-                            self.ville.dynamicObstacles.append(obs)
-                            v.setAsOccupied(len(obs.path)-1, obs)
-                        else:
-                            obs = self.ville.dynamicObstacles[-1]
-                            obs.path.append(v)
-                            v.setAsOccupied(len(obs.path)-1, obs)
+            sipGoal, sipParent = self.ville.sssp.SIPPAStar()
 
-                    sipGoal, sipParent = self.ville.sssp.SIPPAStar()
+            time.sleep(0.03)
 
-                    if sipGoal is None:
-                        print("###########")
-                        print(vStart.pos)
-                        print(vGoal.pos)
 
-                    c = sipGoal
-                    past = None
-                    
-                    while c is not None:
-                        tempV = self.ville.grid.getVertex(c[0], c[1])
+            c = sipGoal
+            past = None
+            
+            while c is not None:
+                tempV = self.ville.grid.getVertex(c[0], c[1])
+                tempV.touched = True
+                if past is not None and ((past[2]-c[2]) > 1):
+                    tempV.dynamicCriticality += past[2]-c[2]
 
-                        if past is None:
-                            if not waitOnly:
-                                tempV.dynamicCriticality += 1
-                        else:
-                            #Added this if statement to only count waiting in place
-                            if waitOnly:
-                                if (past[2]-c[2]) > 1:
-                                    for _ in range(past[2]-c[2]):
-                                        tempV.dynamicCriticality += 1
-                            else:
-                                for _ in range(past[2]-c[2]):
-                                        tempV.dynamicCriticality += 1
+                past = c
+                c = sipParent[c]
 
-                        past = c
-                        c = sipParent[c]
+            #RESET
 
-                    #RESET
+            for i, cell in enumerate(path):
+            
+                v = self.ville.grid.getVertex(cell[0],cell[1])
+                v.safeIntervals.clear()
+                v.occupied.clear()
+                v.occupiedBy.clear()
+                v.setAsNoObstacle()
 
-                    for i, cell in enumerate(path):
-                    
-                        v = self.ville.grid.getVertex(cell[0],cell[1])
-                        v.safeIntervals.clear()
-                        v.occupied.clear()
-                        v.occupiedBy.clear()
-                        v.setAsNoObstacle()
+            self.ville.dynamicObstacles.clear()
 
-                    self.ville.dynamicObstacles.clear()
- 
-            #Normalize?
-            #maxDynamicCriticality = max([v.dynamicCriticality for v in allVertices])
-            # for v in allVertices:
-            #     v.criticality = v.criticality/maxCriticality
-            #     v.dynamicCriticality = v.dynamicCriticality/maxDynamicCriticality
+            time.sleep(0.03)
+
+
 
     def getOccupancyGrids(self, windowSize):
+        #print("getting occupancy grid")
         radius = (windowSize-1)//2
         binaryGrid = self.ville.grid.getBinaryArray()
         paddedBinaryGrid = np.pad(binaryGrid, ((radius,radius),(radius, radius)), 'constant', constant_values=((1,1),(1,1)))
         occupancyGrids = []
         dynamicCriticalities = []
 
-        print(paddedBinaryGrid)
-        print('#'*10)
+        #print(paddedBinaryGrid)
+        #print('#'*10)
 
         for row in range(radius, radius+self.ville.grid.rows):
             for col in range(radius, radius+self.ville.grid.cols):
                 if paddedBinaryGrid[row][col] == 0:
-                    dynamicCriticality = self.ville.grid.getVertex(row-radius, col-radius).dynamicCriticality
-                    dynamicCriticalities.append(dynamicCriticality)
-                    occupancyGrid = paddedBinaryGrid[row-radius:row+radius+1,col-radius:col+radius+1]
-                    occupancyGrids.append(occupancyGrid)
+                    v = self.ville.grid.getVertex(row-radius, col-radius)
+                    if v.touched:
+                        dynamicCriticality = v.dynamicCriticality
+                        dynamicCriticalities.append(dynamicCriticality)
+                        occupancyGrid = paddedBinaryGrid[row-radius:row+radius+1,col-radius:col+radius+1].tolist()
+                        occupancyGrids.append(occupancyGrid)
 
-        for grid, criticality in zip(occupancyGrids, dynamicCriticalities):
-            if criticality > 0:
-                print(criticality)
-                print(grid)
+        outDic = {}
+        outDic['dc'] = dynamicCriticalities
+        outDic['grids'] = occupancyGrids
 
-        return paddedBinaryGrid
+        out_dir_str = './training/'
+        with open(out_dir_str + self.filename, 'w') as fp:
+            dump(outDic, fp)
 
             
     def loadVille(self):

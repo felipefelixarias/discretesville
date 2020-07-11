@@ -73,7 +73,7 @@ class SSSP():
                 heappush(unvisited, (score[n.pos], n))
 
         if goal.pos not in parent:
-            print("Could not find path")
+            #print("Could not find path")
             return None, parent
         else:
             return goal.pos, parent
@@ -192,7 +192,8 @@ class SSSP():
             _, curr = heappop(openSet)
 
             if curr is goal:
-                return self.extractPath(curr.pos, parent)
+                #return self.extractPath(curr.pos, parent)
+                return curr.pos, parent
 
             for n in self.grid.getNeighbors(curr):
                 tempGScore = gScore[curr.pos] + 1
@@ -205,7 +206,7 @@ class SSSP():
                     if (fScore[n.pos], n) not in openSet:
                         heappush(openSet, (fScore[n.pos], n))
 
-        print("Could not find path")
+        #print("Could not find path")
         return []
 
     #Have to fix bug where collision happens in edge.
@@ -266,7 +267,7 @@ class SSSP():
                     if (fScore[(n.pos[0], n.pos[1], timestep+1)], timestep+1, n) not in openSet:
                         heappush(openSet, (fScore[(n.pos[0], n.pos[1], timestep+1)], timestep+1, n))
 
-        print("Could not find path")
+        #print("Could not find path")
         return []
 
     def SIPPAStar(self):
@@ -293,6 +294,7 @@ class SSSP():
         openSet = [(0, 0, start)]
         heapify(openSet)
         
+        #print("Starting sippa*")
         while len(openSet) > 0:
             _, timestep, curr = heappop(openSet)
 
@@ -301,6 +303,7 @@ class SSSP():
                 #self.extractSIPPPath((curr.pos[0], curr.pos[1], timestep), parent)
 
             successors = self.getSuccessors(curr, timestep)
+            #print(str(len(successors)))
 
             for cfg, si, t in successors:               
                 tempGScore = gScore[(curr.pos[0], curr.pos[1], timestep)] + t - timestep
@@ -317,7 +320,7 @@ class SSSP():
                     if (fScore[(cfg.pos[0], cfg.pos[1], t)], t, cfg) not in openSet:
                         heappush(openSet, (fScore[(cfg.pos[0], cfg.pos[1], t)], t, cfg))
 
-        print("Could not find path")
+        #print("Could not find path")
         return None, parent
 
     def getSuccessors(self, s, timestep):

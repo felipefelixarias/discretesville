@@ -157,7 +157,7 @@ my $color_chain = {
 # showtime
 
 
-my $x; for ($x = 0; $x < 1000; $x++) {
+my $x; for ($x = 0; $x < 500; $x++) {
   my $opts = &get_opts($x);
   my $dungeon = &create_dungeon($opts);
   &json_dungeon($dungeon);
@@ -207,14 +207,14 @@ sub get_opts {
   my ($x) = @_;
   my $opts = {
     'seed'              => $x,
-    'n_rows'            => 101,          # must be an odd number
-    'n_cols'            => 101,          # must be an odd number
+    'n_rows'            => 51,          # must be an odd number
+    'n_cols'            => 51,          # must be an odd number
     'dungeon_layout'    => 'None',
     'room_min'          => 1,           # minimum room size
     'room_max'          => 11,           # maximum room size
     'room_layout'       => 'Scattered', # Packed, Scattered
     'corridor_layout'   => 'Bent',
-    'remove_deadends'   => 50,          # percentage
+    'remove_deadends'   => 95,          # percentage
     'add_stairs'        => 0,           # number of stairs
     'map_style'         => 'Standard',
     'cell_size'         => 18,          # pixels
